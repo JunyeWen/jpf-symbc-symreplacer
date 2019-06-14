@@ -40,14 +40,23 @@ package gov.nasa.jpf.symbc.numeric;
 import java.util.Map;
 
 public abstract class Constraint implements Comparable<Constraint> {
-  private final Expression left;
-
+  //private final Expression left;
+	private Expression left;
   private Comparator comp;
-
-  private final Expression right;
-
+  
+  //private final Expression right;
+  	private Expression right;
   public Constraint and;
 
+  //###########################
+  public void setLeft(Expression l) {
+	  this.left = l;
+  }
+  public void setRight(Expression r) {
+	  this.right = r;
+  }
+  //###########################
+  
   public Constraint(Expression l, Comparator c, Expression r) {
     left = l;
     comp = c;

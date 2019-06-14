@@ -47,9 +47,11 @@ import gov.nasa.jpf.symbc.bytecode.INVOKESTATIC;
 import gov.nasa.jpf.symbc.concolic.PCAnalyzer;
 
 import gov.nasa.jpf.symbc.numeric.Comparator;
+import gov.nasa.jpf.symbc.numeric.Constraint;
 import gov.nasa.jpf.symbc.numeric.Expression;
 import gov.nasa.jpf.symbc.numeric.IntegerConstant;
 import gov.nasa.jpf.symbc.numeric.IntegerExpression;
+import gov.nasa.jpf.symbc.numeric.LinearIntegerConstraint;
 import gov.nasa.jpf.symbc.numeric.PCChoiceGenerator;
 import gov.nasa.jpf.symbc.numeric.PathCondition;
 import gov.nasa.jpf.symbc.numeric.RealConstant;
@@ -164,7 +166,10 @@ public class SymbolicListener extends PropertyListenerAdapter implements Publish
         }
         // }
     }
-
+    //###########################
+    // This map is used to store the input value for each var for later use. Key is the var name in final PC.
+    Map<String, Object> varValue = new HashMap<String, Object>();
+    //###########################
     @Override
     public void instructionExecuted(VM vm, ThreadInfo currentThread, Instruction nextInstruction,
             Instruction executedInstruction) {
@@ -200,6 +205,7 @@ public class SymbolicListener extends PropertyListenerAdapter implements Publish
 
                     methodSummary.setMethodName(className + "." + shortName);
                     Object[] argValues = md.getArgumentValues(ti);
+
                     String argValuesStr = "";
                     for (int i = 0; i < argValues.length; i++) {
                         argValuesStr = argValuesStr + argValues[i];
@@ -239,6 +245,17 @@ public class SymbolicListener extends PropertyListenerAdapter implements Publish
                         else
                             symVarNameStr = argsInfo[namesIndex].getName() + "_CONCRETE" + ",";
                         // TODO: what happens if the argument is an array?
+                        /*
+                        // Show the varname/value pair to make sure we got it right
+                        System.out.println("###########################");
+                        System.out.println("symVarNameStr="+symVarNameStr);
+                        System.out.println("value="+argValues[i]);
+                        System.out.println("###########################");
+                        */
+                        //###########################
+                        // Store the corresponding concrete value for each symbolic variable, so we can replace them later
+                        varValue.put(symVarNameStr, argValues[i]);
+                        //###########################
                         symValuesStr = symValuesStr + symVarNameStr + ",";
                         sfIndex++;
                         namesIndex++;
@@ -276,16 +293,108 @@ public class SymbolicListener extends PropertyListenerAdapter implements Publish
                             }
                             cg = prev_cg;
                         }
+                        
                         if ((cg instanceof PCChoiceGenerator) && ((PCChoiceGenerator) cg).getCurrentPC() != null) {
                             PathCondition pc = ((PCChoiceGenerator) cg).getCurrentPC();
+                            /*
+                            // Show some information of the PC
+                            System.out.println("###########################");
+                            Constraint header = pc.header;
+                            do {
+                            	System.out.println("Header:"+header);
+                                System.out.println("Left:"+header.getLeft());
+                                System.out.println("Input value:"+varValue.get(header.getLeft().toString()));
+                                System.out.println("Comparator:"+header.getComparator());
+                                System.out.println("Right:"+header.getRight());
+                                System.out.println("Input value:"+varValue.get(header.getRight().toString()));
+                                header = header.and;
+                            } while (header != null);
+                            System.out.println("###########################");
+                            */
                             // pc.solve(); //we only solve the pc
                             if (SymbolicInstructionFactory.concolicMode) { // TODO: cleaner
                                 SymbolicConstraintsGeneral solver = new SymbolicConstraintsGeneral();
                                 PCAnalyzer pa = new PCAnalyzer();
+                                /*
+                                // Show the PC solving result
+                                System.out.println("###########################");
+                                System.out.println("pa:"+pa);
+                                System.out.println("###########################");
+                                */
                                 pa.solve(pc, solver);
                             } else
                                 pc.solve();
-
+                            /*
+                            //Show the PC solving result                            
+                            System.out.println("###########################");
+                            System.out.println("solve:"+pc);
+                            System.out.println("###########################");
+                            */
+                            System.out.println("###########################");
+                            System.out.println("TEST!");
+                            // Sample: Replace a symbolic variable with the concrete value in the input
+                            System.out.println("PC (Before): " + pc);
+                        	System.out.println("Can be solved: " + pc.solve());
+                        	// WARNING: ORIGINAL PC NEED TO BE BACK UP AND RECOVER, OR IT MAY PERMENATELY CHANGE THE CONSTRAINTS
+	                        Constraint header = pc.header;
+	                        Map<Integer, SymbolicInteger> leftBak = new HashMap<Integer, SymbolicInteger>();
+	                        Map<Integer, SymbolicInteger> rightBak = new HashMap<Integer, SymbolicInteger>();
+	                        
+	                        int index = 1;
+	                        do {
+	                            if (header.getLeft() instanceof SymbolicInteger) {
+	                            	leftBak.put(index, (SymbolicInteger) header.getLeft());
+	                                String leftString = header.getLeft().toString();
+	                                leftString = leftString.substring(0, leftString.indexOf("["));
+	                                //System.out.println(leftString);
+	                                //System.out.println(varValue.get(leftString));
+	                                int i = Integer.valueOf(varValue.get(leftString).toString());
+	                                header.setLeft(new IntegerConstant(i));
+	                            }
+	                            if (header.getRight() instanceof SymbolicInteger) {
+	                            	rightBak.put(index, (SymbolicInteger) header.getRight());
+	                                String rightString = header.getRight().toString();
+	                                rightString = rightString.substring(0, rightString.indexOf("["));
+	                                //System.out.println(rightString);
+	                               	//System.out.println(varValue.get(rightString));
+	                               	int i = Integer.valueOf(varValue.get(rightString).toString());
+	                               	header.setRight(new IntegerConstant(i));
+	                            }
+	                           	header = header.and;
+	                           	index++;
+	                        } while (header != null);
+	                       	System.out.println("PC (After): " + pc);
+	                       	System.out.println("Can be solved: " + pc.solve());
+	                       	
+	                       	header = pc.header;
+	                       	index = 1;
+	                        do {
+	                            if (leftBak.get(index)!=null) {
+	                                header.setLeft(leftBak.get(index));
+	                            }
+	                            if (rightBak.get(index)!=null) {
+	                                header.setLeft(rightBak.get(index));
+	                            }
+	                           	header = header.and;
+	                           	index++;
+	                        } while (header != null);
+	                       	System.out.println("PC (Recover): " + pc);
+	                       	System.out.println("Can be solved: " + pc.solve());
+	                       	
+                            /*
+                            // Sample: Create and solve our own PC
+                            PathCondition pc2 = new PathCondition();
+                    		SymbolicInteger l = new SymbolicInteger("x_1_SYMINT");
+                    		SymbolicInteger r = new SymbolicInteger("y_2_SYMINT");
+                    		//IntegerConstant r = new IntegerConstant(5);
+                    		Comparator c = Comparator.valueOf("LE");
+                    		pc2.header = new LinearIntegerConstraint(l,c,r);
+                    		pc2.solve();
+                    		System.out.println(pc2);                    		
+                    		System.out.println(l.solution);
+                    		*/
+                    		System.out.println("###########################");
+                    		
                             if (!PathCondition.flagSolved) {
                                 return;
                             }
