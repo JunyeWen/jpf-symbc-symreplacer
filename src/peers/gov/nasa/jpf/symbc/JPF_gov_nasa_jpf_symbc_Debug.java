@@ -871,6 +871,50 @@ public class JPF_gov_nasa_jpf_symbc_Debug extends NativePeer {
         Observations.lastMeasuredMetricValue = 0.0;
     }
     
-    
+    /* YN: Methods to read the internal values of the DNN on the SPF side. */
+    @MJI
+    public static double get_biases0_value(MJIEnv env, int objRef, int index) {
+        return Observations.internal.biases0[index];
+    }
 
+    @MJI
+    public static double get_biases2_value(MJIEnv env, int objRef, int index) {
+        return Observations.internal.biases2[index];
+    }
+
+    @MJI
+    public static double get_biases6_value(MJIEnv env, int objRef, int index) {
+        return Observations.internal.biases6[index];
+    }
+
+    @MJI
+    public static double get_biases8_value(MJIEnv env, int objRef, int index) {
+        return Observations.internal.biases8[index];
+    }
+
+    @MJI
+    public static double get_weights6_value(MJIEnv env, int objRef, int index0, int index1) {
+        return Observations.internal.weights6[index0][index1];
+    }
+
+    @MJI
+    public static double get_weights8_value(MJIEnv env, int objRef, int index0, int index1) {
+        return Observations.internal.weights8[index0][index1];
+    }
+
+    @MJI
+    public static double get_weights0_value(MJIEnv env, int objRef, int index0, int index1, int index2, int index3) {
+        return Observations.internal.weights0[index0][index1][index2][index3];
+    }
+
+    @MJI
+    public static double get_weights2_value(MJIEnv env, int objRef, int index0, int index1, int index2, int index3) {
+        return Observations.internal.weights2[index0][index1][index2][index3];
+    }
+
+    @MJI
+    public static int getDataDir(MJIEnv env, int objRef) {
+        return env.newString(Observations.dataDir);
+    }
+    
 }
