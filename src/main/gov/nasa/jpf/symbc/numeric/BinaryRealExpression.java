@@ -97,6 +97,13 @@ public class BinaryRealExpression extends RealExpression
 		return right;
 	}
 
+	public void setLeft(Expression left) {
+		this.left = (RealExpression) left;
+	}
+	public void setRight(Expression right) {
+		this.right = (RealExpression) right;
+	}
+	
 	// JacoGeldenhuys
 	@Override
 	public void accept(ConstraintExpressionVisitor visitor) {
