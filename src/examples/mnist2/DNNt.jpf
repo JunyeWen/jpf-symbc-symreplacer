@@ -6,7 +6,8 @@ sourcepath=${jpf-symbc}/src/examples
 
 symbolic.dp=z3
 
-listener = .symbc.SymbolicListener
+#listener = .symbc.SymbolicListener
+listener = .symbc.SymbolicReplacerListener
 
 symbolic.min_double=0.0
 symbolic.max_double=1.0

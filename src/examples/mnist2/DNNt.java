@@ -170,8 +170,10 @@ public class DNNt {
 					double value = (inputImage[i][j] + 128) / 255.0;
 
 					/* Add symbolic value. */
-					if ((i==0 && j==0) || (i==2 && j==2)) {
-						a[i][j][k] = Debug.addSymbolicDouble(value, "sym_" + i + "_" + j + "_" + k + "_" + value);	
+					//if ((i==0 && j==0)) {
+					//if ((i==0 && j==0) || (i==2 && j==2)) {
+					if (i==j && i<6) {
+						a[i][j][k] = Debug.addSymbolicDouble(value, "sym_" + i + "_" + j + "_" + k + "_" + String.valueOf(value));
 					} else  {
 						a[i][j][k] = value;
 					}
@@ -199,7 +201,7 @@ public class DNNt {
 		
 		System.out.println();
 		System.out.println("Result: " + res);
-		Debug.printPC("pc=");
+		//Debug.printPC("pc=");
 		
 		System.out.println("Done.");
 	}

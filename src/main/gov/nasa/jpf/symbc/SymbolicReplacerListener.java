@@ -45,8 +45,6 @@ import gov.nasa.jpf.search.Search;
 import gov.nasa.jpf.symbc.bytecode.BytecodeUtils;
 import gov.nasa.jpf.symbc.bytecode.INVOKESTATIC;
 import gov.nasa.jpf.symbc.concolic.PCAnalyzer;
-
-import gov.nasa.jpf.symbc.numeric.Comparator;
 import gov.nasa.jpf.symbc.numeric.Expression;
 import gov.nasa.jpf.symbc.numeric.IntegerConstant;
 import gov.nasa.jpf.symbc.numeric.IntegerExpression;
@@ -55,7 +53,7 @@ import gov.nasa.jpf.symbc.numeric.PathCondition;
 import gov.nasa.jpf.symbc.numeric.RealConstant;
 import gov.nasa.jpf.symbc.numeric.RealExpression;
 import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
-import gov.nasa.jpf.symbc.numeric.SymbolicReal;
+
 
 import gov.nasa.jpf.symbc.numeric.SymbolicConstraintsGeneral;
 //import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
@@ -69,17 +67,21 @@ import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.Vector;
 
-public class SymbolicListener extends PropertyListenerAdapter implements PublisherExtension {
+import edu.txstate.cs.wen.tools.GeneralTools;
+import edu.txstate.cs.wen.tools.RealConstraintReplacer;
+
+public class SymbolicReplacerListener extends PropertyListenerAdapter implements PublisherExtension {
 
     /*
      * Locals to preserve the value that was held by JPF prior to changing it in order to turn off state matching during
      * symbolic execution no longer necessary because we run spf stateless
      */
-
+	
+	
     private Map<String, MethodSummary> allSummaries;
     private String currentMethodName = "";
 
-    public SymbolicListener(Config conf, JPF jpf) {
+    public SymbolicReplacerListener(Config conf, JPF jpf) {
         jpf.addPublisherExtension(ConsolePublisher.class, this);
         allSummaries = new HashMap<String, MethodSummary>();
     }
@@ -148,8 +150,8 @@ public class SymbolicListener extends PropertyListenerAdapter implements Publish
                 PCAnalyzer pa = new PCAnalyzer();
                 pa.solve(pc, solver);
             } else
-                pc.solve();
-
+            	pc.solve();
+            
             Pair<String, String> pcPair = new Pair<String, String>(pc.toString(), error);// (pc.toString(),error);
 
             // String methodName = vm.getLastInstruction().getMethodInfo().getName();
@@ -164,7 +166,7 @@ public class SymbolicListener extends PropertyListenerAdapter implements Publish
         }
         // }
     }
-
+   
     @Override
     public void instructionExecuted(VM vm, ThreadInfo currentThread, Instruction nextInstruction,
             Instruction executedInstruction) {
@@ -200,6 +202,7 @@ public class SymbolicListener extends PropertyListenerAdapter implements Publish
 
                     methodSummary.setMethodName(className + "." + shortName);
                     Object[] argValues = md.getArgumentValues(ti);
+
                     String argValuesStr = "";
                     for (int i = 0; i < argValues.length; i++) {
                         argValuesStr = argValuesStr + argValues[i];
@@ -239,6 +242,8 @@ public class SymbolicListener extends PropertyListenerAdapter implements Publish
                         else
                             symVarNameStr = argsInfo[namesIndex].getName() + "_CONCRETE" + ",";
                         // TODO: what happens if the argument is an array?
+                        GeneralTools.storeJPFSymbMethodVarInfo(symVarNameStr, argValues, i);
+                        
                         symValuesStr = symValuesStr + symVarNameStr + ",";
                         sfIndex++;
                         namesIndex++;
@@ -276,15 +281,21 @@ public class SymbolicListener extends PropertyListenerAdapter implements Publish
                             }
                             cg = prev_cg;
                         }
+                        
                         if ((cg instanceof PCChoiceGenerator) && ((PCChoiceGenerator) cg).getCurrentPC() != null) {
                             PathCondition pc = ((PCChoiceGenerator) cg).getCurrentPC();
+                            
+                            GeneralTools.storeHeader(pc.header);
+                           
                             // pc.solve(); //we only solve the pc
                             if (SymbolicInstructionFactory.concolicMode) { // TODO: cleaner
                                 SymbolicConstraintsGeneral solver = new SymbolicConstraintsGeneral();
                                 PCAnalyzer pa = new PCAnalyzer();
                                 pa.solve(pc, solver);
-                            } else
-                                pc.solve();
+                            } else {
+                              //pc.solve();
+                            	RealConstraintReplacer.replaceAndSolvePC(pc);
+                            }
 
                             if (!PathCondition.flagSolved) {
                                 return;
@@ -650,4 +661,6 @@ public class SymbolicListener extends PropertyListenerAdapter implements Publish
         }
 
     }
+    
+  
 }
