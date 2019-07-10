@@ -1,20 +1,21 @@
 package edu.txstate.cs.wen.tools;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import gov.nasa.jpf.symbc.numeric.BinaryRealExpression;
 import gov.nasa.jpf.symbc.numeric.Comparator;
 import gov.nasa.jpf.symbc.numeric.Constraint;
 import gov.nasa.jpf.symbc.numeric.Expression;
-import gov.nasa.jpf.symbc.numeric.IntegerConstant;
-import gov.nasa.jpf.symbc.numeric.LinearIntegerConstraint;
 import gov.nasa.jpf.symbc.numeric.Operator;
 import gov.nasa.jpf.symbc.numeric.PathCondition;
 import gov.nasa.jpf.symbc.numeric.RealConstant;
 import gov.nasa.jpf.symbc.numeric.RealConstraint;
 import gov.nasa.jpf.symbc.numeric.RealExpression;
-import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
 import gov.nasa.jpf.symbc.numeric.SymbolicReal;
 
 public class RealConstraintReplacer {
@@ -47,6 +48,8 @@ public class RealConstraintReplacer {
         PathCondition.flagSolved = false;
         if (header instanceof RealConstraint) {
         	pc2.header = copyRealHeader((RealConstraint) header);
+        	rankRealHeader((RealConstraint) pc2.header);
+        	sortRanking();
         	replaceRealHeader((RealConstraint) pc2.header);
         	absorbRealHeader((RealConstraint) pc2.header);
         }
@@ -65,14 +68,121 @@ public class RealConstraintReplacer {
     	*/
     	
     }
-   
+    
+    // Rank symbolic variables
+    static Map<String, Double> RANKMAP = new HashMap<String, Double>();
+    static List<String> REPLACELIST = new ArrayList<String>();
+    static int REPLACENUM = 3;
+    
+    public static void rankRealHeader(Constraint header) { 	 
+    	if (header.getLeft() instanceof BinaryRealExpression) {
+    		rankBinaryRealExpression((BinaryRealExpression) header.getLeft());                            		
+      	}
+      	if (header.getRight() instanceof BinaryRealExpression) {
+      		rankBinaryRealExpression((BinaryRealExpression) header.getRight());                            		
+      	}
+      	header = header.and;  
+      	if (header != null) {
+      		rankRealHeader(header);
+      	}    
+	} 
+    
+    public static void rankBinaryRealExpression(BinaryRealExpression e) {
+    	if (e.getLeft() instanceof BinaryRealExpression) {
+    		BinaryRealExpression bre = (BinaryRealExpression) e.getLeft();
+    		if (bre.getLeft() instanceof RealConstant && bre.getRight() instanceof SymbolicReal) {
+    			double value = Double.valueOf(bre.getLeft().toString().substring(6));
+    			// Impact should be considered as absolute value?
+    			if (value < 0) {
+    				value = 0 - value;
+    			}
+    			String var = bre.getRight().toString();
+    			//System.out.println("Find: " + value + ", " + var);
+    			if (RANKMAP.containsKey(var)) {
+    				RANKMAP.put(var, RANKMAP.get(var)+value);
+    			} else {
+    				RANKMAP.put(var, value);
+    			}
+    		}
+    		if (bre.getLeft() instanceof SymbolicReal && bre.getRight() instanceof RealConstant) {
+    			double value = Double.valueOf(bre.getRight().toString().substring(6));
+    			// Impact should be considered as absolute value?
+    			if (value < 0) {
+    				value = 0 - value;
+    			}
+    			String var = bre.getLeft().toString();
+    			//System.out.println("Find: " + value + ", " + var);
+    			if (RANKMAP.containsKey(var)) {
+    				RANKMAP.put(var, RANKMAP.get(var)+value);
+    			} else {
+    				RANKMAP.put(var, value);
+    			}
+    		}	
+    		rankBinaryRealExpression(bre);
+    	}
+    	if (e.getRight() instanceof BinaryRealExpression) {
+    		BinaryRealExpression bre = (BinaryRealExpression) e.getRight();   	
+    		if (bre.getLeft() instanceof RealConstant && bre.getRight() instanceof SymbolicReal) {
+    			double value = Double.valueOf(bre.getLeft().toString().substring(6));
+    			// Impact should be considered as absolute value
+    			if (value < 0) {
+    				value = 0 - value;
+    			}
+    			String var = bre.getRight().toString();
+    			//System.out.println("Find: " + value + ", " + var);
+    			assert(value >=0);
+    			if (RANKMAP.containsKey(var)) {
+    				RANKMAP.put(var, RANKMAP.get(var)+value);
+    			} else {
+    				RANKMAP.put(var, value);
+    			}
+    		}
+    		if (bre.getLeft() instanceof SymbolicReal && bre.getRight() instanceof RealConstant) {
+    			double value = Double.valueOf(bre.getRight().toString().substring(6));
+    			// Impact should be considered as absolute value
+    			if (value < 0) {
+    				value = 0 - value;
+    			}
+    			String var = bre.getLeft().toString();
+    			//System.out.println("Find: " + value + ", " + var);
+    			if (RANKMAP.containsKey(var)) {
+    				assert(RANKMAP.get(var)>0);
+    				RANKMAP.put(var, RANKMAP.get(var)+value);
+    			} else {
+    				RANKMAP.put(var, value);
+    			}
+    		}
+    		rankBinaryRealExpression(bre);
+    	}
+    }
+    
+    public static void sortRanking() {
+    	// Sort
+    	List<Entry<String, Double>> sortList = new ArrayList<Entry<String, Double>>(RANKMAP.entrySet());
+		Collections.sort(sortList, new java.util.Comparator<Map.Entry<String, Double>>() {
+			public int compare(Map.Entry<String, Double> o1, Map.Entry<String, Double> o2) {
+				if (o2.getValue() < o1.getValue()) return 1;
+		        if (o1.getValue() < o2.getValue()) return -1;
+		        return 0;
+			}
+		});
+		
+		int i = 0;
+		for(Entry<String, Double> t : sortList){
+			System.out.println(t.getKey()+":"+t.getValue());
+			if (i < REPLACENUM) {
+				REPLACELIST.add(t.getKey());
+				i++;
+			}
+		}
+    }
+    
 	// Replace symbolic variables to input concrete values
     public static void replaceRealHeader(Constraint header) { 	 
     	if (header.getLeft() instanceof BinaryRealExpression) {
       		replaceBinaryRealExpression((BinaryRealExpression) header.getLeft());                            		
       	}
       	if (header.getRight() instanceof BinaryRealExpression) {
-
       		replaceBinaryRealExpression((BinaryRealExpression) header.getRight());                            		
       	}
       	header = header.and;  
@@ -83,33 +193,39 @@ public class RealConstraintReplacer {
     
     public static BinaryRealExpression replaceBinaryRealExpression(BinaryRealExpression e) {
     	if (e.getLeft() instanceof BinaryRealExpression) {
-    		e.setLeft(replaceBinaryRealExpression((BinaryRealExpression) e.getLeft()));
+    		BinaryRealExpression bre = (BinaryRealExpression) e.getLeft();
+    		e.setLeft(replaceBinaryRealExpression(bre));
     	}
     	if (e.getRight() instanceof BinaryRealExpression) {
-    		e.setRight(replaceBinaryRealExpression((BinaryRealExpression) e.getRight()));
+    		BinaryRealExpression bre = (BinaryRealExpression) e.getRight();   		
+    		e.setRight(replaceBinaryRealExpression(bre));
     	}
 
     	if (e.getLeft() instanceof SymbolicReal) {
-    		if (e.getLeft().toString().contains("_0_0_0")) {
-    			e.setLeft(replaceSymbolicReal((SymbolicReal) e.getLeft()));
+    		String sym = e.getLeft().toString();
+    		SymbolicReal sr = (SymbolicReal) e.getLeft();
+    		if (REPLACELIST.contains(sym)) {
+    			//System.out.println("Replace: " + sym);
+    			e.setLeft(replaceSymbolicReal(sr));
     		}
-    		if (e.getLeft().toString().contains("_2_2_0")) {
-    			e.setLeft(replaceSymbolicReal((SymbolicReal) e.getLeft()));
+    		/*
+    		if (sym.contains("_0_0_0")) {
+    			e.setLeft(replaceSymbolicReal(sr));
     		}
-    		if (e.getLeft().toString().contains("_4_4_0")) {
-    			e.setLeft(replaceSymbolicReal((SymbolicReal) e.getLeft()));
-    		}
+    		*/
     	}
     	if (e.getRight() instanceof SymbolicReal) {
-    		if (e.getRight().toString().contains("_0_0_0")) {
-    			e.setRight(replaceSymbolicReal((SymbolicReal) e.getRight()));
+    		String sym = e.getRight().toString();
+    		SymbolicReal sr = (SymbolicReal) e.getRight();
+    		if (REPLACELIST.contains(sym)) {
+    			//System.out.println("Replace: " + sym);
+    			e.setLeft(replaceSymbolicReal(sr));
     		}
-    		if (e.getRight().toString().contains("_2_2_0")) {
-    			e.setRight(replaceSymbolicReal((SymbolicReal) e.getRight()));
+    		/*
+    		if (sym.contains("_0_0_0")) {
+    			e.setRight(replaceSymbolicReal(sr));
     		}
-    		if (e.getRight().toString().contains("_4_4_0")) {
-    			e.setRight(replaceSymbolicReal((SymbolicReal) e.getRight()));
-    		}
+    		*/
     	}
     	return e;
     }
@@ -236,8 +352,6 @@ public class RealConstraintReplacer {
 		} else {
 			throw new RuntimeException("## Error! e: " + e.getClass());
 		}
-		return e;
-		//throw new RuntimeException("## How did you get here?! e: " + e.getClass());
-		
+		return e;		
 	}
 }
