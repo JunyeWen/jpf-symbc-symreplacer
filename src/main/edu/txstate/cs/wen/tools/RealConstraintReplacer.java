@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import gov.nasa.jpf.Config;
 import gov.nasa.jpf.symbc.numeric.BinaryRealExpression;
 import gov.nasa.jpf.symbc.numeric.Comparator;
 import gov.nasa.jpf.symbc.numeric.Constraint;
@@ -19,7 +20,23 @@ import gov.nasa.jpf.symbc.numeric.RealExpression;
 import gov.nasa.jpf.symbc.numeric.SymbolicReal;
 
 public class RealConstraintReplacer {
-  
+	public static int RANK_MIN;
+	public static int RANK_INIT;
+	
+	public static void readConfig(Config conf) {
+		if (conf.getProperty("symbolic.replace.init_rank").isEmpty()) {
+			RANK_INIT = 0;
+		} else {
+			RANK_INIT = Integer.valueOf(conf.getProperty("symbolic.replace.init_rank"));
+		}
+		
+		if (conf.getProperty("symbolic.replace.init_rank").isEmpty()) {
+			RANK_MIN = 0;
+		} else {
+			RANK_MIN = Integer.valueOf(conf.getProperty("symbolic.replace.min_rank"));
+		}
+		
+	}
     // WORKING: this method deal with Real types, for DNN
     public static void replaceAndSolvePC(PathCondition pc) {
         System.out.println("###########################");
@@ -44,23 +61,47 @@ public class RealConstraintReplacer {
         */
         
         Constraint header = pc.header;
-        PathCondition pc2 = pc.make_copy();
-        PathCondition.flagSolved = false;
-        if (header instanceof RealConstraint) {
-        	pc2.header = copyRealHeader((RealConstraint) header);
-        	rankRealHeader((RealConstraint) pc2.header);
-        	sortRanking();
-        	replaceRealHeader((RealConstraint) pc2.header);
-        	absorbRealHeader((RealConstraint) pc2.header);
+        
+        if (header instanceof RealConstraint) {  	
+        	/////////TEST!!!!!/////////
+        	int i;
+        	for (i = RANK_INIT; i >= RANK_MIN; i--) {
+        		PathCondition pc2 = pc.make_copy();
+                PathCondition.flagSolved = false;
+        		pc2.header = copyRealHeader((RealConstraint) header);
+            	rankRealHeader((RealConstraint) pc2.header);
+            	
+        		sortRanking(i);
+            	replaceRealHeader((RealConstraint) pc2.header);
+            	absorbRealHeader((RealConstraint) pc2.header);
+
+        		
+        		startTime = System.currentTimeMillis();
+                solvable = pc2.solve();
+                endTime   = System.currentTimeMillis();
+            	System.out.println("Can be solved (After): " + solvable);
+            	System.out.println("Time (After): " + (endTime - startTime));
+            	
+            	if (solvable) {
+            		break;
+            	}
+        	}
+        	if (i < RANK_MIN) {
+        		System.out.println("PC NOT SOLVABLE AFTER REPLACEMENT!");
+        	}
+        	
         }
         System.out.println("After replacing:");
         //System.out.println("Expression types (After): ");
         //check(pc.header);
+        
+        /*
         startTime = System.currentTimeMillis();
         solvable = pc2.solve();
         endTime   = System.currentTimeMillis();
     	System.out.println("Can be solved (After): " + solvable);
     	System.out.println("Time (After): " + (endTime - startTime));
+    	*/
     	/*
     	if (solvable) {
     		System.out.println("PC (After): " + pc2);
@@ -156,7 +197,10 @@ public class RealConstraintReplacer {
     	}
     }
     
-    public static void sortRanking() {
+    public static void sortRanking(int rank) {
+    	if (rank < RANK_MIN) {
+    		rank = RANK_MIN;
+    	}
     	// Sort
     	List<Entry<String, Double>> sortList = new ArrayList<Entry<String, Double>>(RANKMAP.entrySet());
 		Collections.sort(sortList, new java.util.Comparator<Map.Entry<String, Double>>() {
@@ -167,14 +211,22 @@ public class RealConstraintReplacer {
 			}
 		});
 		
+		REPLACELIST.clear();
+		
 		int i = 0;
 		for(Entry<String, Double> t : sortList){
-			System.out.println(t.getKey()+":"+t.getValue());
-			if (i < REPLACENUM) {
+			//System.out.println(t.getKey()+":"+t.getValue());
+			if (i < rank) {
 				REPLACELIST.add(t.getKey());
 				i++;
 			}
 		}
+		
+		System.out.println("Replace List: " + REPLACELIST.size());
+		for (String s : REPLACELIST) {
+			System.out.println(s);
+		}
+		
     }
     
 	// Replace symbolic variables to input concrete values

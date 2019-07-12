@@ -14,4 +14,7 @@ symbolic.max_double=1.0
 symbolic.dnn.data=${jpf-symbc}/src/examples/mnist2/data
 
 
-symbolic.method= mnist2.DNNt.run(sym)
+symbolic.method=mnist2.DNNt.run(sym)
+
+symbolic.replace.init_rank = 5
+symbolic.replace.min_rank = 3

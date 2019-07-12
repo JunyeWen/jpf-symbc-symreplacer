@@ -83,6 +83,7 @@ public class SymbolicReplacerListener extends PropertyListenerAdapter implements
 
     public SymbolicReplacerListener(Config conf, JPF jpf) {
         jpf.addPublisherExtension(ConsolePublisher.class, this);
+        RealConstraintReplacer.readConfig(conf);
         allSummaries = new HashMap<String, MethodSummary>();
     }
 
