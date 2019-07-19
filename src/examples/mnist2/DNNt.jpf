@@ -13,8 +13,12 @@ symbolic.min_double=0.0
 symbolic.max_double=1.0
 symbolic.dnn.data=${jpf-symbc}/src/examples/mnist2/data
 
+symbolic.collect_constraints=true
 
 symbolic.method=mnist2.DNNt.run(sym)
-
-symbolic.replace.init_rank = 5
-symbolic.replace.min_rank = 3
+#28*28=784
+symbolic.replace.init_rank = 50
+#>0
+symbolic.replace.min_rank = 0
+#1-100
+symbolic.replace.step = 20

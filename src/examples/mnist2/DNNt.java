@@ -172,7 +172,7 @@ public class DNNt {
 					/* Add symbolic value. */
 					//if ((i==0 && j==0)) {
 					//if ((i==0 && j==0) || (i==2 && j==2)) {
-					if (i==j && i<6) {
+					if (i<10) {
 						a[i][j][k] = Debug.addSymbolicDouble(value, "sym_" + i + "_" + j + "_" + k + "_" + String.valueOf(value));
 					} else  {
 						a[i][j][k] = value;

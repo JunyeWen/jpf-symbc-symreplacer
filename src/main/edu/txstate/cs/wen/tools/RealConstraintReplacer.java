@@ -22,6 +22,7 @@ import gov.nasa.jpf.symbc.numeric.SymbolicReal;
 public class RealConstraintReplacer {
 	public static int RANK_MIN;
 	public static int RANK_INIT;
+	public static int RANK_STEP;
 	
 	public static void readConfig(Config conf) {
 		if (conf.getProperty("symbolic.replace.init_rank").isEmpty()) {
@@ -36,7 +37,25 @@ public class RealConstraintReplacer {
 			RANK_MIN = Integer.valueOf(conf.getProperty("symbolic.replace.min_rank"));
 		}
 		
+		if (conf.getProperty("symbolic.replace.init_rank").isEmpty()) {
+			RANK_STEP = 10;
+		} else {
+			RANK_STEP = Integer.valueOf(conf.getProperty("symbolic.replace.min_rank"));
+			if (RANK_STEP < 1) {
+				RANK_STEP = 1;
+			} if (RANK_STEP > 100) {
+				RANK_STEP = 100;
+			}
+		}
+		
 	}
+	
+    
+    // Rank symbolic variables
+    static Map<String, Double> RANKMAP = new HashMap<String, Double>();
+    static List<String> REPLACELIST = new ArrayList<String>();
+    static int STEP;
+	
     // WORKING: this method deal with Real types, for DNN
     public static void replaceAndSolvePC(PathCondition pc) {
         System.out.println("###########################");
@@ -62,10 +81,17 @@ public class RealConstraintReplacer {
         
         Constraint header = pc.header;
         
+        STEP = (RANK_INIT - RANK_MIN) * RANK_STEP / 100;
+        
+        if (STEP < 1) {
+        	STEP = 1;
+        }
+        
         if (header instanceof RealConstraint) {  	
         	/////////TEST!!!!!/////////
         	int i;
-        	for (i = RANK_INIT; i >= RANK_MIN; i--) {
+        	boolean breakFlag = false;
+        	for (i = RANK_INIT; i >= RANK_MIN; i=i-STEP) {
         		PathCondition pc2 = pc.make_copy();
                 PathCondition.flagSolved = false;
         		pc2.header = copyRealHeader((RealConstraint) header);
@@ -82,9 +108,16 @@ public class RealConstraintReplacer {
             	System.out.println("Can be solved (After): " + solvable);
             	System.out.println("Time (After): " + (endTime - startTime));
             	
-            	if (solvable) {
+            	if (solvable || breakFlag) {
             		break;
             	}
+            	
+            	if (i - STEP < RANK_MIN) {
+            		// Make sure last iteration replace RANK_MIN symbolic vars
+            		i = RANK_MIN + STEP;
+            		breakFlag = true;
+            	}
+            	
         	}
         	if (i < RANK_MIN) {
         		System.out.println("PC NOT SOLVABLE AFTER REPLACEMENT!");
@@ -109,11 +142,6 @@ public class RealConstraintReplacer {
     	*/
     	
     }
-    
-    // Rank symbolic variables
-    static Map<String, Double> RANKMAP = new HashMap<String, Double>();
-    static List<String> REPLACELIST = new ArrayList<String>();
-    static int REPLACENUM = 3;
     
     public static void rankRealHeader(Constraint header) { 	 
     	if (header.getLeft() instanceof BinaryRealExpression) {
