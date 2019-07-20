@@ -133,10 +133,16 @@ public class SymbolicConstraintsGeneral {
             pb = tempPb;
 
             // YN: z3 optimize
-            if (Observations.lastObservedSymbolicExpression != null) {
+            if (Observations.lastObservedSymbolicExpressionOldVersion != null) {
                 if (pb instanceof ProblemZ3Optimize) {
-                    ((ProblemZ3Optimize) pb).maximize(
-                            PCParser.getExpression((IntegerExpression) Observations.lastObservedSymbolicExpression));
+                    ((ProblemZ3Optimize) pb).maximize(PCParser
+                            .getExpression((IntegerExpression) Observations.lastObservedSymbolicExpressionOldVersion));
+                }
+            }
+            if (Observations.lastObservedSymbolicExpressionNewVersion != null) {
+                if (pb instanceof ProblemZ3Optimize) {
+                    ((ProblemZ3Optimize) pb).maximize(PCParser
+                            .getExpression((IntegerExpression) Observations.lastObservedSymbolicExpressionNewVersion));
                 }
             }
 

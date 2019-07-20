@@ -149,7 +149,7 @@ public class BytecodeUtils {
             this.inst = null;
         }
 
-        private InstructionOrSuper(boolean callSuper, Instruction inst) {
+        public InstructionOrSuper(boolean callSuper, Instruction inst) {
             this.callSuper = callSuper;
             this.inst = inst;
         }
