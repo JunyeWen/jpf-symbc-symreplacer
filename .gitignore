@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 .hg
 .hgignore
 local.properties
@@ -11,3 +12,8 @@ trace
 *.orig
 *~
 *.DS_Store
+=======
+*.dot
+*.pdf
+*/symexe-out
+>>>>>>> 4f9ba683b52e42389b988e5a68ab0e0fb4d0bc43
