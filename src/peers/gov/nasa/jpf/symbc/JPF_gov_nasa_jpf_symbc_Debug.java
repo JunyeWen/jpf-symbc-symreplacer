@@ -117,7 +117,7 @@ public class JPF_gov_nasa_jpf_symbc_Debug extends NativePeer {
     public static int getSymbolicByteValue(MJIEnv env, int objRef, byte v) {
         Object[] attrs = env.getArgAttributes();
 
-        IntegerExpression sym_arg = (IntegerExpression) attrs[0];
+        Object sym_arg = (Object) attrs[0];
         if (sym_arg != null)
             return env.newString(sym_arg.toString());
         else
@@ -242,6 +242,13 @@ public class JPF_gov_nasa_jpf_symbc_Debug extends NativePeer {
     }
 
     @MJI
+    public static byte addConstrainedSymbolicByte(MJIEnv env, int objRef, byte v, int stringRef, int l, int u) {
+        String name = env.getStringObject(stringRef);
+        env.setReturnAttribute(new SymbolicInteger(name, l, u));
+        return v;
+    }
+
+    @MJI
     public static char addSymbolicChar(MJIEnv env, int objRef, char v, int stringRef) {
         String name = env.getStringObject(stringRef);
         env.setReturnAttribute(new SymbolicInteger(name, MinMax.getVarMinByte(name), MinMax.getVarMaxByte(name)));
@@ -254,18 +261,47 @@ public class JPF_gov_nasa_jpf_symbc_Debug extends NativePeer {
         env.setReturnAttribute(new SymbolicInteger(name, MinMax.getVarMinInt(name), MinMax.getVarMaxInt(name)));
         return v;
     }
-    
+
+    @MJI
+    public static int addConstrainedSymbolicInt(MJIEnv env, int objRef, int v, int stringRef, int l, int u) {
+        String name = env.getStringObject(stringRef);
+        env.setReturnAttribute(new SymbolicInteger(name, l, u));
+        return v;
+    }
+
+    @MJI
+    public static long addSymbolicLong(MJIEnv env, int objRef, long v, int stringRef) {
+        String name = env.getStringObject(stringRef);
+        env.setReturnAttribute(new SymbolicInteger(name, MinMax.getVarMinLong(name), MinMax.getVarMaxLong(name)));
+        return v;
+    }
+
     @MJI
     public static double addSymbolicDouble(MJIEnv env, int objRef, double v, int stringRef) {
         String name = env.getStringObject(stringRef);
-        env.setReturnAttribute(new SymbolicReal(name));//, MinMax.getVarMinDouble(name), MinMax.getVarMaxDouble(name))); Corina: to check
+        env.setReturnAttribute(new SymbolicReal(name));// , MinMax.getVarMinDouble(name),
+                                                       // MinMax.getVarMaxDouble(name))); Corina: to check
         return v;
     }
-    
+
+    @MJI
+    public static boolean addSymbolicBoolean(MJIEnv env, int objRef, boolean v, int stringRef) {
+        String name = env.getStringObject(stringRef);
+        env.setReturnAttribute(new SymbolicInteger(name, 0, 1));
+        return v;
+    }
+
     @MJI
     public static int makeSymbolicInteger(MJIEnv env, int objRef, int stringRef) {
         String name = env.getStringObject(stringRef);
         env.setReturnAttribute(new SymbolicInteger(name, MinMax.getVarMinInt(name), MinMax.getVarMaxInt(name)));
+        return 0;
+    }
+
+    @MJI
+    public static int makeConstrainedSymbolicInteger(MJIEnv env, int objRef, int stringRef, int l, int u) {
+        String name = env.getStringObject(stringRef);
+        env.setReturnAttribute(new SymbolicInteger(name, l, u));
         return 0;
     }
 
@@ -287,6 +323,13 @@ public class JPF_gov_nasa_jpf_symbc_Debug extends NativePeer {
     public static byte makeSymbolicByte(MJIEnv env, int objRef, int stringRef) {
         String name = env.getStringObject(stringRef);
         env.setReturnAttribute(new SymbolicInteger(name, MinMax.getVarMinByte(name), MinMax.getVarMaxByte(name)));
+        return 0;
+    }
+
+    @MJI
+    public static byte makeConstrainedSymbolicByte(MJIEnv env, int objRef, int stringRef, int l, int u) {
+        String name = env.getStringObject(stringRef);
+        env.setReturnAttribute(new SymbolicInteger(name, l, u));
         return 0;
     }
 
@@ -799,7 +842,7 @@ public class JPF_gov_nasa_jpf_symbc_Debug extends NativePeer {
         return true; // Verify.ignoreIf will ignore this state.
     }
 
-    /* YN: user-defined cost*/
+    /* YN: user-defined cost */
     @MJI
     public static void addCost(MJIEnv env, int objRef, int objvRef) {
         ClassInfo ci = env.getClassInfo(objvRef);
@@ -808,16 +851,16 @@ public class JPF_gov_nasa_jpf_symbc_Debug extends NativePeer {
 
         Expression symbolicExpression = null;
         int concreteValue = 0;
-        
+
         if (fields.length != 1) {
             throw new RuntimeException("fields.length != 1 (Debug.addCost)");
         }
-        
+
         FieldInfo fi = fields[0];
         Object attr = ei.getFieldAttr(fi);
         int intValue = ei.getIntField(fi);
         concreteValue = intValue;
-        
+
         if (attr != null) { // we reached a symbolic primitive field
             symbolicExpression = (Expression) attr;
         }
@@ -826,51 +869,145 @@ public class JPF_gov_nasa_jpf_symbc_Debug extends NativePeer {
          * So far we only handle positive cost. Reason: AFL uses a u64 for the cost, so we would run into problems by
          * using negative numbers.
          */
-    
+
         if (concreteValue > 0) {
-            Observations.lastObservedCost += concreteValue;
+            Observations.lastMeasuredMetricValueOldVersion += concreteValue;
+            Observations.lastMeasuredMetricValueNewVersion += concreteValue;
         }
 
         if (symbolicExpression != null) {
-            Observations.lastObservedSymbolicExpression = symbolicExpression;
-        } 
+            Observations.lastObservedSymbolicExpressionOldVersion = symbolicExpression;
+            Observations.lastObservedSymbolicExpressionNewVersion = symbolicExpression;
+        }
 
     }
-    
+
     @MJI
-    public static double getLastMeasuredMetricValue(MJIEnv env, int objRef) {
-        return Observations.lastMeasuredMetricValue;
-    }
-    
-    @MJI
-    public static void setLastObservedInputSize(MJIEnv env, int objRef, int objvRef) {
+    public static void addCostOldVersion(MJIEnv env, int objRef, int objvRef) {
         ClassInfo ci = env.getClassInfo(objvRef);
         ElementInfo ei = VM.getVM().getHeap().get(objvRef);
         FieldInfo[] fields = ci.getDeclaredInstanceFields();
 
+        Expression symbolicExpression = null;
         int concreteValue = 0;
-        
+
         if (fields.length != 1) {
             throw new RuntimeException("fields.length != 1 (Debug.addCost)");
         }
-        
+
         FieldInfo fi = fields[0];
+        Object attr = ei.getFieldAttr(fi);
         int intValue = ei.getIntField(fi);
         concreteValue = intValue;
-        
-        Observations.lastObservedInputSize = concreteValue;
+
+        if (attr != null) { // we reached a symbolic primitive field
+            symbolicExpression = (Expression) attr;
+        }
+
+        /*
+         * So far we only handle positive cost. Reason: AFL uses a u64 for the cost, so we would run into problems by
+         * using negative numbers.
+         */
+
+        if (concreteValue > 0) {
+            Observations.lastMeasuredMetricValueOldVersion += concreteValue;
+        }
+
+        if (symbolicExpression != null) {
+            Observations.lastObservedSymbolicExpressionOldVersion = symbolicExpression;
+        }
+
     }
-    
+
     @MJI
-    public static int getLastObservedInputSize(MJIEnv env, int objRef) {
-        return Observations.lastObservedInputSize;
+    public static void addCostNewVersion(MJIEnv env, int objRef, int objvRef) {
+        ClassInfo ci = env.getClassInfo(objvRef);
+        ElementInfo ei = VM.getVM().getHeap().get(objvRef);
+        FieldInfo[] fields = ci.getDeclaredInstanceFields();
+
+        Expression symbolicExpression = null;
+        int concreteValue = 0;
+
+        if (fields.length != 1) {
+            throw new RuntimeException("fields.length != 1 (Debug.addCost)");
+        }
+
+        FieldInfo fi = fields[0];
+        Object attr = ei.getFieldAttr(fi);
+        int intValue = ei.getIntField(fi);
+        concreteValue = intValue;
+
+        if (attr != null) { // we reached a symbolic primitive field
+            symbolicExpression = (Expression) attr;
+        }
+
+        /*
+         * So far we only handle positive cost. Reason: AFL uses a u64 for the cost, so we would run into problems by
+         * using negative numbers.
+         */
+
+        if (concreteValue > 0) {
+            Observations.lastMeasuredMetricValueNewVersion += concreteValue;
+        }
+
+        if (symbolicExpression != null) {
+            Observations.lastObservedSymbolicExpressionNewVersion = symbolicExpression;
+        }
+
     }
-    
+
+    @MJI
+    public static double getLastMeasuredMetricValue(MJIEnv env, int objRef) {
+        return Observations.lastMeasuredMetricValueNewVersion;
+    }
+
+    @MJI
+    public static double getLastMeasuredOldMetricValue(MJIEnv env, int objRef) {
+        return Observations.lastMeasuredMetricValueOldVersion;
+    }
+
+    @MJI
+    public static double getLastMeasuredNewMetricValue(MJIEnv env, int objRef) {
+        return Observations.lastMeasuredMetricValueNewVersion;
+    }
+
+    @MJI
+    public static void reset_last_observed_input_size(MJIEnv env, int objRef, int length) {
+        Observations.lastObservedInputSizes = new int[length];
+    }
+
+    @MJI
+    public static void set_last_observed_input_size(MJIEnv env, int objRef, int index, int value) {
+        Observations.lastObservedInputSizes[index] = value;
+    }
+
+    @MJI
+    public static int get_number_of_last_observed_input_sizes(MJIEnv env, int objRef) {
+        return Observations.lastObservedInputSizes.length;
+    }
+
+    @MJI
+    public static int get_last_observed_input_size(MJIEnv env, int objRef, int index) {
+        return Observations.lastObservedInputSizes[index];
+    }
+
     @MJI
     public static void clearMeasurements(MJIEnv env, int objRef) {
-        Observations.lastMeasuredMetricValue = 0.0;
+        Observations.lastMeasuredMetricValueOldVersion = 0.0;
+        Observations.lastMeasuredMetricValueNewVersion = 0.0;
     }
-    
+
+    @MJI
+    public static void printSymbolicValue(MJIEnv env, int objRef, int v) {
+        Object[] attrs = env.getArgAttributes();
+        Object sym_arg = attrs[0];
+        if (sym_arg != null) {
+            System.out.println(sym_arg);
+        } else {
+            System.out.println(env.getObjectAttr(objRef));
+        }
+    }
+
     /* YN: Methods to read the internal values of the DNN on the SPF side. */
     @MJI
     public static double get_biases0_value(MJIEnv env, int objRef, int index) {
@@ -916,5 +1053,5 @@ public class JPF_gov_nasa_jpf_symbc_Debug extends NativePeer {
     public static int getDataDir(MJIEnv env, int objRef) {
         return env.newString(Observations.dataDir);
     }
-    
+
 }

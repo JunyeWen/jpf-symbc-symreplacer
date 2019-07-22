@@ -37,102 +37,176 @@
 package gov.nasa.jpf.symbc.numeric;
 
 import java.util.HashMap;
-import java.util.HashSet;
 
+import gov.nasa.jpf.JPFException;
 import gov.nasa.jpf.vm.IntChoiceGenerator;
+import gov.nasa.jpf.vm.ThreadInfo;
+import gov.nasa.jpf.vm.ThreadInfo.Execute;
 import gov.nasa.jpf.vm.choice.IntIntervalGenerator;
-
-
-
 
 public class PCChoiceGenerator extends IntIntervalGenerator {
 
-	//protected PathCondition[] PC;
-	protected HashMap<Integer, PathCondition> PC;
-	boolean isReverseOrder;
+    /* jpf-shadow start modification */
+    protected boolean choicesSet = false;
 
-	int offset; // to be used in the CFG
-	public int getOffset() { return offset;}
-	public void setOffset(int off) {
-		//if(SymbolicInstructionFactory.debugMode) System.out.println("offset "+off);
-		offset=off;
-	}
-	String methodName; // to be used in the CFG
-	public String getMethodName() { return methodName;}
-	public void setMethodName(String name) {
-		//if(SymbolicInstructionFactory.debugMode) System.out.println("methodName "+ name);
-		methodName = name;
-	}
+    public boolean choicesSet() {
+        return this.choicesSet;
+    }
 
-	@SuppressWarnings("deprecation")
-	public PCChoiceGenerator(int size) {
-		super(0, size - 1);
-		PC = new HashMap<Integer, PathCondition>();
-		for(int i = 0; i < size; i++)
-			PC.put(i, new PathCondition());
-		isReverseOrder = false;
-	}
-	
-	public PCChoiceGenerator(int min, int max) {
-		this(min, max, 1);
-	}
-	
-	@SuppressWarnings("deprecation")
-	public PCChoiceGenerator(int min, int max, int delta) {
-		super(min, max, delta);
-		PC = new HashMap<Integer, PathCondition>();
-		for(int i = min; i <= max; i += delta)
-			PC.put(i, new PathCondition());
-		isReverseOrder = false;
-	}
-	
-	/*
-	 * If reverseOrder is true, the PCChoiceGenerator
-	 * explores paths in the opposite order used by
-	 * the default constructor. If reverseOrder is false
-	 * the usual behavior is used.
-	 */
-	@SuppressWarnings("deprecation")
-	public PCChoiceGenerator(int size, boolean reverseOrder) {
-		super(0, size - 1, reverseOrder ? -1 : 1);
-		PC = new HashMap<Integer, PathCondition>();
-		for(int i = 0; i < size; i++)
-			PC.put(i, new PathCondition());
-		isReverseOrder = reverseOrder;
-	}
+    public void resetAndSetChoices(int min, int max, int delta) {
+        isDone = false;
+        if (delta == 0) {
+            throw new JPFException("PCChoiceGenerator delta value is 0");
+        }
+        this.min = min;
+        this.max = max;
+        this.delta = delta;
+        /*
+         * if (min > max) { int t = max; this.max = min; this.min = t; }
+         * 
+         * if (delta > 0) { this.next = min; } else { this.next = max; }
+         */
+        this.next = min;
+        choicesSet = true;
+    }
 
-	public boolean isReverseOrder() {
-		return isReverseOrder;
-	}
+    public PCChoiceGenerator(String id, int min, int max, int delta) {
+        super(id, min, max, delta);
+        PC = new HashMap<Integer, PathCondition>();
+        for (int i = min; i <= max; i += delta) {
+            PC.put(i, new PathCondition());
+        }
+        isReverseOrder = false;
+    }
 
-	// sets the PC constraints for the current choice
-	public void setCurrentPC(PathCondition pc) {
-		PC.put(getNextChoice(),pc);
+    public PCChoiceGenerator(String id, int min, int max) {
+        this(id, min, max, 1);
+    }
 
-	}
-	// sets the PC constraints for the specified choice
-	public void setPC(PathCondition pc, int choice) {
-			PC.put(new Integer(choice),pc);
+    public PCChoiceGenerator(String id, int size) {
+        this(id, 0, size - 1);
+    }
 
-		}
-	
-	// returns the PC constraints for the current choice
-	public PathCondition getCurrentPC() {
-		PathCondition pc;
+    public void setExecutionMode(ThreadInfo.Execute newExecutionMode) {
+        executionMode = newExecutionMode;
+    }
 
-		pc = PC.get(getNextChoice());
-		if (pc != null) {
-			return pc.make_copy();
-		} else {
-			return null;
-		}
-	}
+    public ThreadInfo.Execute getExecutionMode() {
+        return executionMode;
+    }
 
-	public IntChoiceGenerator randomize() {
-		return new PCChoiceGenerator(PC.size(), random.nextBoolean());
-	}
+    private ThreadInfo.Execute executionMode = Execute.BOTH;
+    /* jpf-shadow end modification */
 
-	public void setNextChoice(int nextChoice){
-		super.next = nextChoice;
-	}
+    // protected PathCondition[] PC;
+    protected HashMap<Integer, PathCondition> PC;
+    boolean isReverseOrder;
+
+    int offset; // to be used in the CFG
+
+    public int getOffset() {
+        return offset;
+    }
+
+    public void setOffset(int off) {
+        // if(SymbolicInstructionFactory.debugMode) System.out.println("offset "+off);
+        offset = off;
+    }
+
+    String methodName; // to be used in the CFG
+
+    public String getMethodName() {
+        return methodName;
+    }
+
+    public void setMethodName(String name) {
+        // if(SymbolicInstructionFactory.debugMode) System.out.println("methodName "+ name);
+        methodName = name;
+    }
+
+    @SuppressWarnings("deprecation")
+    public PCChoiceGenerator(int size) {
+        super(0, size - 1);
+        PC = new HashMap<Integer, PathCondition>();
+        for (int i = 0; i < size; i++)
+            PC.put(i, new PathCondition());
+        isReverseOrder = false;
+    }
+
+    public PCChoiceGenerator(int min, int max) {
+        this(min, max, 1);
+    }
+
+    @SuppressWarnings("deprecation")
+    public PCChoiceGenerator(int min, int max, int delta) {
+        super(min, max, delta);
+        PC = new HashMap<Integer, PathCondition>();
+        for (int i = min; i <= max; i += delta)
+            PC.put(i, new PathCondition());
+        isReverseOrder = false;
+    }
+
+    /*
+     * If reverseOrder is true, the PCChoiceGenerator explores paths in the opposite order used by the default
+     * constructor. If reverseOrder is false the usual behavior is used.
+     */
+    @SuppressWarnings("deprecation")
+    public PCChoiceGenerator(int size, boolean reverseOrder) {
+        super(0, size - 1, reverseOrder ? -1 : 1);
+        PC = new HashMap<Integer, PathCondition>();
+        for (int i = 0; i < size; i++)
+            PC.put(i, new PathCondition());
+        isReverseOrder = reverseOrder;
+    }
+
+    public boolean isReverseOrder() {
+        return isReverseOrder;
+    }
+
+    // sets the PC constraints for the current choice
+    public void setCurrentPC(PathCondition pc) {
+        PC.put(getNextChoice(), pc);
+
+    }
+
+    // sets the PC constraints for the specified choice
+    public void setPC(PathCondition pc, int choice) {
+        PC.put(new Integer(choice), pc);
+
+    }
+
+    // returns the PC constraints for the current choice
+    public PathCondition getCurrentPC() {
+        PathCondition pc;
+
+        pc = PC.get(getNextChoice());
+        if (pc != null) {
+            return pc.make_copy();
+        } else {
+            return null;
+        }
+    }
+
+    public IntChoiceGenerator randomize() {
+        return new PCChoiceGenerator(PC.size(), random.nextBoolean());
+    }
+
+    public void setNextChoice(int nextChoice) {
+        super.next = nextChoice;
+    }
+
+    public void selectGuidedChoice(int choice) {
+        if (delta == 1) {
+            super.select(choice);
+        } else {
+            /*
+             * Own setting because the standard selection will not use the delta and just iteratively call advance()
+             * that might to a much higher choice value than actually possible.
+             */
+            reset();
+            next = choice;
+            setDone();
+        }
+    }
+
 }

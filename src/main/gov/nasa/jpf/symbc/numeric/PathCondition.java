@@ -52,20 +52,59 @@ import gov.nasa.jpf.symbc.arrays.StoreExpression;
 import gov.nasa.jpf.symbc.arrays.SelectExpression;
 import gov.nasa.jpf.symbc.concolic.PCAnalyzer;
 import gov.nasa.jpf.symbc.numeric.solvers.SolverTranslator;
-import gov.nasa.jpf.symbc.numeric.visitors.CollectVariableVisitor;
 import gov.nasa.jpf.symbc.string.StringPathCondition;
-import gov.nasa.jpf.symbc.concolic.*;
 import gov.nasa.jpf.vm.ChoiceGenerator;
 import gov.nasa.jpf.vm.MJIEnv;
 import gov.nasa.jpf.vm.VM;
 
 // path condition contains mixed constraints of integers and reals
 
-/**
- * YN: added solveWithValuation() from later verision (Yannic Noller <nolleryc@gmail.com>)
- */
 public class PathCondition implements Comparable<PathCondition> {
     public static boolean flagSolved = false;
+    
+    /* jpf-shadow start modification */
+    public enum Diff{
+    	none, 
+    	divByZero,
+    	diffTrue,
+    	diffFalse,
+    	diffReturn
+    }
+    
+    protected boolean isDiffPC = false;
+    private int diffSourceLine = -1;
+    private Diff diffType = Diff.none;
+    
+    //Flag whether a change()-method has been executed along the path
+    private boolean containsDiffExpr = false; 
+
+    public int getDiffSourceLine(){
+    	return this.diffSourceLine;
+    }
+    
+    public Diff getDiffType(){
+    	return this.diffType;
+    }
+    
+    public void markAsDiffPC(int diffSourceLine, Diff diffType) {
+    	this.isDiffPC = true;
+    	this.diffSourceLine = diffSourceLine;
+    	this.diffType = diffType;
+    }
+    
+    public boolean isDiffPC() {
+    	return isDiffPC;
+    }
+    
+    
+    public void markContainsDiffExpr(){
+    	this.containsDiffExpr = true;
+    }
+    
+    public boolean containsDiffExpr(){
+    	return this.containsDiffExpr;
+    }
+    /* jpf-shadow end modification */
 
     public HashMap<String, ArrayExpression> arrayExpressions;
 
@@ -110,6 +149,17 @@ public class PathCondition implements Comparable<PathCondition> {
         pc_new.spc = this.spc.make_copy(pc_new); // TODO: to review
         pc_new.solverCalls = this.solverCalls;
         pc_new.arrayExpressions = this.arrayExpressions;
+        
+        /* jpf-shadow start modification */
+        if(this.isDiffPC){
+        	// also add diff information
+        	pc_new.markAsDiffPC(this.diffSourceLine, this.diffType);
+        } 
+        if(this.containsDiffExpr){
+        	pc_new.markContainsDiffExpr();
+        }
+        /* jpf-shadow end modification */
+        
         return pc_new;
     }
 
