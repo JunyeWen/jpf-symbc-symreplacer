@@ -29,23 +29,27 @@ public class RealConstraintReplacer {
 			RANK_INIT = 0;
 		} else {
 			RANK_INIT = Integer.valueOf(conf.getProperty("symbolic.replace.init_rank"));
+			System.out.println("RANK_INIT="+RANK_INIT);
 		}
 		
 		if (conf.getProperty("symbolic.replace.init_rank").isEmpty()) {
 			RANK_MIN = 0;
 		} else {
 			RANK_MIN = Integer.valueOf(conf.getProperty("symbolic.replace.min_rank"));
+			System.out.println("RANK_MIN="+RANK_MIN);
 		}
 		
-		if (conf.getProperty("symbolic.replace.init_rank").isEmpty()) {
+		if (conf.getProperty("symbolic.replace.step").isEmpty()) {
 			RANK_STEP = 10;
 		} else {
-			RANK_STEP = Integer.valueOf(conf.getProperty("symbolic.replace.min_rank"));
+			RANK_STEP = Integer.valueOf(conf.getProperty("symbolic.replace.step"));
 			if (RANK_STEP < 1) {
 				RANK_STEP = 1;
 			} if (RANK_STEP > 100) {
 				RANK_STEP = 100;
 			}
+			
+			System.out.println("RANK_STEP="+RANK_STEP);
 		}
 		
 	}
@@ -106,9 +110,16 @@ public class RealConstraintReplacer {
                 solvable = pc2.solve();
                 endTime   = System.currentTimeMillis();
             	System.out.println("Can be solved (After): " + solvable);
+            	if (solvable) {
+            		PCLIST.clear();
+            		printRealHeader((RealConstraint) pc2.header);
+            		for (String s : PCLIST) {
+            			System.out.println(s);
+            		}
+        		}
             	System.out.println("Time (After): " + (endTime - startTime));
             	
-            	if (solvable || breakFlag) {
+            	if (solvable || breakFlag) {	
             		break;
             	}
             	
@@ -124,7 +135,7 @@ public class RealConstraintReplacer {
         	}
         	
         }
-        System.out.println("After replacing:");
+        //System.out.println("After replacing:");
         //System.out.println("Expression types (After): ");
         //check(pc.header);
         
@@ -249,12 +260,12 @@ public class RealConstraintReplacer {
 				i++;
 			}
 		}
-		
+		/*
 		System.out.println("Replace List: " + REPLACELIST.size());
 		for (String s : REPLACELIST) {
 			System.out.println(s);
 		}
-		
+		*/
     }
     
 	// Replace symbolic variables to input concrete values
@@ -355,13 +366,55 @@ public class RealConstraintReplacer {
 			BinaryRealExpression temp = (BinaryRealExpression) e;
 			Operator op = temp.getOp();
 			RealExpression left = (RealExpression) copyRealConstraint(temp.getLeft());
+			//System.out.println(left);
 			RealExpression right = (RealExpression) copyRealConstraint(temp.getRight());
+			//System.out.println(right);
 			return new BinaryRealExpression(left, op, right);
 		}
 		
 			
 		throw new RuntimeException("## Error! e: " + e.getClass());
 	}
+	
+	
+	// Print the PC
+	public static void printRealHeader(RealConstraint header) {
+		if (header == null) {
+			return;
+		}
+		
+		printRealConstraint(header.getLeft());
+		printRealConstraint(header.getRight());
+			
+		printRealHeader((RealConstraint) header.and);
+	}
+
+	public static void printRealConstraint(Expression e) {
+		if (e == null) {
+			return;
+		}
+			
+		if (e instanceof SymbolicReal) {
+			//System.out.println(e);
+			if (!PCLIST.contains(e.toString())) {
+				PCLIST.add(e.toString());
+			}
+			return;
+		}
+			
+			
+		if (e instanceof BinaryRealExpression) {
+			BinaryRealExpression temp = (BinaryRealExpression) e;
+			printRealConstraint(temp.getLeft());
+			printRealConstraint(temp.getRight());
+			return;
+		}
+			
+				
+		//throw new RuntimeException("## Error! e: " + e.getClass());
+	}
+	
+	public static List<String> PCLIST = new ArrayList<String>();
 	
 	// Shrink the PC by apply constraint calculations
 	public static void absorbRealHeader(RealConstraint header) {
