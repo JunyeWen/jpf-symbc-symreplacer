@@ -293,4 +293,10 @@ public class Debug {
     }
     
     native public static String getDataDir();
+    
+    /* YN: store concrete values of last symcrete run */
+    native public static void resetConcreteValueObservation();
+    native public static double getDoubleValue(String symVarName);
+    native public static int getIntValue(String symVarName);
+    
 }

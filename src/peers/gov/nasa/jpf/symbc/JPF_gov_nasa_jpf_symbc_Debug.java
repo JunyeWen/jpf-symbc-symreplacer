@@ -18,6 +18,7 @@
 
 package gov.nasa.jpf.symbc;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -238,6 +239,10 @@ public class JPF_gov_nasa_jpf_symbc_Debug extends NativePeer {
     public static byte addSymbolicByte(MJIEnv env, int objRef, byte v, int stringRef) {
         String name = env.getStringObject(stringRef);
         env.setReturnAttribute(new SymbolicInteger(name, MinMax.getVarMinByte(name), MinMax.getVarMaxByte(name)));
+        
+        /* Store concrete value mapping. */
+        Observations.addConcreteValMapping(name, v);
+        
         return v;
     }
 
@@ -245,6 +250,10 @@ public class JPF_gov_nasa_jpf_symbc_Debug extends NativePeer {
     public static byte addConstrainedSymbolicByte(MJIEnv env, int objRef, byte v, int stringRef, int l, int u) {
         String name = env.getStringObject(stringRef);
         env.setReturnAttribute(new SymbolicInteger(name, l, u));
+        
+        /* Store concrete value mapping. */
+        Observations.addConcreteValMapping(name, v);
+        
         return v;
     }
 
@@ -252,6 +261,10 @@ public class JPF_gov_nasa_jpf_symbc_Debug extends NativePeer {
     public static char addSymbolicChar(MJIEnv env, int objRef, char v, int stringRef) {
         String name = env.getStringObject(stringRef);
         env.setReturnAttribute(new SymbolicInteger(name, MinMax.getVarMinByte(name), MinMax.getVarMaxByte(name)));
+        
+        /* Store concrete value mapping. */
+        Observations.addConcreteValMapping(name, v);
+        
         return v;
     }
 
@@ -259,6 +272,10 @@ public class JPF_gov_nasa_jpf_symbc_Debug extends NativePeer {
     public static int addSymbolicInt(MJIEnv env, int objRef, int v, int stringRef) {
         String name = env.getStringObject(stringRef);
         env.setReturnAttribute(new SymbolicInteger(name, MinMax.getVarMinInt(name), MinMax.getVarMaxInt(name)));
+        
+        /* Store concrete value mapping. */
+        Observations.addConcreteValMapping(name, v);
+        
         return v;
     }
 
@@ -266,6 +283,10 @@ public class JPF_gov_nasa_jpf_symbc_Debug extends NativePeer {
     public static int addConstrainedSymbolicInt(MJIEnv env, int objRef, int v, int stringRef, int l, int u) {
         String name = env.getStringObject(stringRef);
         env.setReturnAttribute(new SymbolicInteger(name, l, u));
+        
+        /* Store concrete value mapping. */
+        Observations.addConcreteValMapping(name, v);
+        
         return v;
     }
 
@@ -273,6 +294,10 @@ public class JPF_gov_nasa_jpf_symbc_Debug extends NativePeer {
     public static long addSymbolicLong(MJIEnv env, int objRef, long v, int stringRef) {
         String name = env.getStringObject(stringRef);
         env.setReturnAttribute(new SymbolicInteger(name, MinMax.getVarMinLong(name), MinMax.getVarMaxLong(name)));
+        
+        /* Store concrete value mapping. */
+        Observations.addConcreteValMapping(name, v);
+        
         return v;
     }
 
@@ -281,6 +306,10 @@ public class JPF_gov_nasa_jpf_symbc_Debug extends NativePeer {
         String name = env.getStringObject(stringRef);
         env.setReturnAttribute(new SymbolicReal(name));// , MinMax.getVarMinDouble(name),
                                                        // MinMax.getVarMaxDouble(name))); Corina: to check
+        
+        /* Store concrete value mapping. */
+        Observations.addConcreteValMapping(name, v);
+        
         return v;
     }
 
@@ -288,6 +317,10 @@ public class JPF_gov_nasa_jpf_symbc_Debug extends NativePeer {
     public static boolean addSymbolicBoolean(MJIEnv env, int objRef, boolean v, int stringRef) {
         String name = env.getStringObject(stringRef);
         env.setReturnAttribute(new SymbolicInteger(name, 0, 1));
+        
+        /* Store concrete value mapping. */
+        Observations.addConcreteValMapping(name, v);
+        
         return v;
     }
 
@@ -1053,5 +1086,34 @@ public class JPF_gov_nasa_jpf_symbc_Debug extends NativePeer {
     public static int getDataDir(MJIEnv env, int objRef) {
         return env.newString(Observations.dataDir);
     }
+    
+    /* YN: store concrete values of last symcrete run */
+    @MJI
+    public static void resetConcreteValueObservation(MJIEnv env, int objRef) {
+        Observations.values = new HashMap<>();
+    }
+    
+    @MJI
+    public static double getDoubleValue(MJIEnv env, int objRef, int stringRef) {
+        String name = env.getStringObject(stringRef);
+        Object value = Observations.values.get(name);
+        if (value != null) {
+        	return (double) value;
+        } else {
+        	return 0;
+        }
+    }
+    @MJI
+    public static int getIntValue(MJIEnv env, int objRef, int stringRef) {
+        String name = env.getStringObject(stringRef);
+        Object value = Observations.values.get(name);
+        if (value != null) {
+        	return (int) value;
+        } else {
+        	return 0;
+        }
+    }
+    
+    
 
 }

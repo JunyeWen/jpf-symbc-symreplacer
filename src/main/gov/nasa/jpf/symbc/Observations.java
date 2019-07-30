@@ -1,5 +1,7 @@
 package gov.nasa.jpf.symbc;
 
+import java.util.Map;
+
 import gov.nasa.jpf.symbc.numeric.Expression;
 import gov.nasa.jpf.symbc.util.InternalData;
 
@@ -29,7 +31,7 @@ public class Observations {
         lastMeasuredMetricValueOldVersion = 0.0;
         lastMeasuredMetricValueNewVersion = 0.0;
     }
-
+    
     /* YN: read and store the internal data of the DNN. */
     public static InternalData internal = null;
 
@@ -45,5 +47,17 @@ public class Observations {
 
     public static String getDataDir() {
         return dataDir;
+    }
+    
+    
+    /* YN: store concrete values of last symcrete run */
+    public static Map<String, Object> values;
+    
+    public static void addConcreteValMapping(String symbolicVarName, Object concreteValue) {
+    	values.put(symbolicVarName, concreteValue);
+    }
+    
+    public static Map<String, Object> getConcreteValMapping() {
+    	return values;
     }
 }
