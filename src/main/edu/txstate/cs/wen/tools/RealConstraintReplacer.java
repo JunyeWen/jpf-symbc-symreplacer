@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import gov.nasa.jpf.Config;
+import gov.nasa.jpf.symbc.Observations;
 import gov.nasa.jpf.symbc.numeric.BinaryRealExpression;
 import gov.nasa.jpf.symbc.numeric.Comparator;
 import gov.nasa.jpf.symbc.numeric.Constraint;
@@ -323,10 +324,18 @@ public class RealConstraintReplacer {
    
 	public static RealConstant replaceSymbolicReal(SymbolicReal e) {
 		String key = e.toString();
+		/*
 		if (key.lastIndexOf("[")!= -1) {
 			key = key.substring(0, key.lastIndexOf("["));
 		}
+		
 		double value = (double) GeneralTools.VARVALUE.get(key);
+		*/
+		double value = (double) Observations.values.get(key);
+		
+		//System.out.println("key="+key+",value="+value);
+		
+		
 		RealConstant replaceConstant = new RealConstant(value);
 		return replaceConstant;
 	}

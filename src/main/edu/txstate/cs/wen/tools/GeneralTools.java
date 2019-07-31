@@ -22,7 +22,7 @@ public class GeneralTools {
         System.out.println("###########################");
         */
         // Store the corresponding concrete value for each symbolic variable, so we can replace them later
-        VARVALUE.put(symVarNameStr, argValues[index]);
+        //VARVALUE.put(symVarNameStr, argValues[index]);
     }
     
     // Store symbolic values that are NOT in JPF file
@@ -65,11 +65,12 @@ public class GeneralTools {
     		storeRealExpression(bre.getLeft());
     		storeRealExpression(bre.getRight());
     	}
+    	/*
     	if (e instanceof SymbolicReal) {
     		//System.out.println(e.toString().substring(e.toString().lastIndexOf("_")+1));
     		double value = Double.valueOf(e.toString().substring(e.toString().lastIndexOf("_")+1));
     		VARVALUE.put(e.toString(), value);
     	}
-    	
+    	*/
     }
 }

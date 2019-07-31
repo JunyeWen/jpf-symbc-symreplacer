@@ -1,5 +1,6 @@
 package gov.nasa.jpf.symbc;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import gov.nasa.jpf.symbc.numeric.Expression;
@@ -51,7 +52,7 @@ public class Observations {
     
     
     /* YN: store concrete values of last symcrete run */
-    public static Map<String, Object> values;
+    public static Map<String, Object> values = new HashMap<String, Object>();
     
     public static void addConcreteValMapping(String symbolicVarName, Object concreteValue) {
     	values.put(symbolicVarName, concreteValue);
