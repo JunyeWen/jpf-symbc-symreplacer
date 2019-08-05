@@ -52,7 +52,7 @@ public class Observations {
     
     
     /* YN: store concrete values of last symcrete run */
-    public static Map<String, Object> values = new HashMap<String, Object>();
+    public static Map<String, Object> values;
     
     public static void addConcreteValMapping(String symbolicVarName, Object concreteValue) {
     	values.put(symbolicVarName, concreteValue);

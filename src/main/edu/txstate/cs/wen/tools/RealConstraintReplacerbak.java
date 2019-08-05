@@ -20,35 +20,24 @@ import gov.nasa.jpf.symbc.numeric.RealConstraint;
 import gov.nasa.jpf.symbc.numeric.RealExpression;
 import gov.nasa.jpf.symbc.numeric.SymbolicReal;
 
-public class RealConstraintReplacer {
-	// Settings from configuration file
+public class RealConstraintReplacerbak {
 	public static int RANK_MIN;
 	public static int RANK_INIT;
 	public static int RANK_STEP;
-	
-    // Rank symbolic variables
-	public Map<String, Double> RANKMAP;
-	public List<String> REPLACELIST;
-	public int STEP;
-	
-	// Logging and misc
-	public long startTime;
-	public long endTime;
-	public Boolean solvable;
 	
 	public static void readConfig(Config conf) {
 		if (conf.getProperty("symbolic.replace.init_rank").isEmpty()) {
 			RANK_INIT = 0;
 		} else {
 			RANK_INIT = Integer.valueOf(conf.getProperty("symbolic.replace.init_rank"));
-			System.out.println("symbolic.replace.init_rank="+RANK_INIT);
+			System.out.println("RANK_INIT="+RANK_INIT);
 		}
 		
 		if (conf.getProperty("symbolic.replace.init_rank").isEmpty()) {
 			RANK_MIN = 0;
 		} else {
 			RANK_MIN = Integer.valueOf(conf.getProperty("symbolic.replace.min_rank"));
-			System.out.println("symbolic.replace.min_rank="+RANK_MIN);
+			System.out.println("RANK_MIN="+RANK_MIN);
 		}
 		
 		if (conf.getProperty("symbolic.replace.step").isEmpty()) {
@@ -61,13 +50,22 @@ public class RealConstraintReplacer {
 				RANK_STEP = 100;
 			}
 			
-			System.out.println("symbolic.replace.step="+RANK_STEP);
+			System.out.println("RANK_STEP="+RANK_STEP);
 		}
 		
 	}
-
+	
+    
+    // Rank symbolic variables
+	public Map<String, Double> RANKMAP;
+	public List<String> REPLACELIST;
+	public int STEP;
+	
     // WORKING: this method deal with Real types, for DNN
-	public void replaceAndSolvePC(PathCondition pc) {
+	public long startTime;
+	public long endTime;
+	public Boolean solvable;
+    public void replaceAndSolvePC(PathCondition pc) {
         System.out.println("###########################");
         System.out.println("WARNING: WORKING IN PROGRESS!");      
         /*
@@ -104,17 +102,32 @@ public class RealConstraintReplacer {
                 
 
         		System.out.print("Begin ranking...");
-        		RANKMAP  = new HashMap<String, Double>();
                 startTime = System.currentTimeMillis();
             	rankRealHeader(pc.header);
         		sortRanking(i);
         		endTime   = System.currentTimeMillis();
         		System.out.println("Finished. Time: " + (endTime - startTime));
-                        
+                
+                
                 System.out.print("Begin copying...");
                 startTime = System.currentTimeMillis();
-        		pc2.header = this.craRealHeader((RealConstraint) header);
+        		pc2.header = this.copyRealHeader((RealConstraint) header);
         		endTime   = System.currentTimeMillis();
+        		System.out.println("Finished. Time: " + (endTime - startTime));
+        		
+        		RANKMAP  = new HashMap<String, Double>();
+
+        		
+        		System.out.print("Begin replacing...");
+                startTime = System.currentTimeMillis();
+            	replaceRealHeader((RealConstraint) pc2.header);
+            	endTime   = System.currentTimeMillis();
+        		System.out.println("Finished. Time: " + (endTime - startTime));
+        		
+        		System.out.print("Begin absorbing...");
+                startTime = System.currentTimeMillis();
+            	absorbRealHeader((RealConstraint) pc2.header);
+            	endTime   = System.currentTimeMillis();
         		System.out.println("Finished. Time: " + (endTime - startTime));
         		
             	Thread t1 = new Thread("PC Solving Thread") {
@@ -181,7 +194,6 @@ public class RealConstraintReplacer {
     	
     }
     
-	// Rank and sort symbolic variables
     public void rankRealHeader(Constraint header) { 	 
     	if (header.getLeft() instanceof BinaryRealExpression) {
     		rankBinaryRealExpression((BinaryRealExpression) header.getLeft());                            		
@@ -296,85 +308,128 @@ public class RealConstraintReplacer {
 		*/
     }
     
-	// Copy, replace and absorb PC
-	public RealConstraint craRealHeader (RealConstraint header) {
+	// Replace symbolic variables to input concrete values
+    public void replaceRealHeader(Constraint header) { 	 
+    	if (header.getLeft() instanceof BinaryRealExpression) {
+      		replaceBinaryRealExpression((BinaryRealExpression) header.getLeft());                            		
+      	}
+      	if (header.getRight() instanceof BinaryRealExpression) {
+      		replaceBinaryRealExpression((BinaryRealExpression) header.getRight());                            		
+      	}
+      	header = header.and;  
+      	if (header != null) {
+      		replaceRealHeader(header);
+      	}    
+	} 
+    
+    public BinaryRealExpression replaceBinaryRealExpression(BinaryRealExpression e) {
+    	if (e.getLeft() instanceof BinaryRealExpression) {
+    		BinaryRealExpression bre = (BinaryRealExpression) e.getLeft();
+    		e.setLeft(replaceBinaryRealExpression(bre));
+    	}
+    	if (e.getRight() instanceof BinaryRealExpression) {
+    		BinaryRealExpression bre = (BinaryRealExpression) e.getRight();   		
+    		e.setRight(replaceBinaryRealExpression(bre));
+    	}
+
+    	if (e.getLeft() instanceof SymbolicReal) {
+    		String sym = e.getLeft().toString();
+    		SymbolicReal sr = (SymbolicReal) e.getLeft();
+    		if (REPLACELIST.contains(sym)) {
+    			//System.out.println("Replace: " + sym);
+    			e.setLeft(replaceSymbolicReal(sr));
+    		}
+    		/*
+    		if (sym.contains("_0_0_0")) {
+    			e.setLeft(replaceSymbolicReal(sr));
+    		}
+    		*/
+    	}
+    	if (e.getRight() instanceof SymbolicReal) {
+    		String sym = e.getRight().toString();
+    		SymbolicReal sr = (SymbolicReal) e.getRight();
+    		if (REPLACELIST.contains(sym)) {
+    			//System.out.println("Replace: " + sym);
+    			e.setLeft(replaceSymbolicReal(sr));
+    		}
+    		/*
+    		if (sym.contains("_0_0_0")) {
+    			e.setRight(replaceSymbolicReal(sr));
+    		}
+    		*/
+    	}
+    	return e;
+    }
+   
+	public RealConstant replaceSymbolicReal(SymbolicReal e) {
+		String key = e.toString();
+		/*
+		if (key.lastIndexOf("[")!= -1) {
+			key = key.substring(0, key.lastIndexOf("["));
+		}
+		
+		double value = (double) GeneralTools.VARVALUE.get(key);
+		*/
+		double value = (double) Observations.values.get(key);
+		
+		//System.out.println("key="+key+",value="+value);
+		
+		
+		RealConstant replaceConstant = new RealConstant(value);
+		return replaceConstant;
+	}
+
+	// Copy the PC
+	public RealConstraint copyRealHeader(RealConstraint header) {
 		if (header == null) {
 			return null;
 		}
+
 		Comparator comp = header.getComparator();	
-		RealExpression left = (RealExpression) craRealConstraint(header.getLeft());
-		RealExpression right = (RealExpression) craRealConstraint(header.getRight());
+		
+		RealExpression left = (RealExpression) this.copyRealConstraint(header.getLeft());
+		RealExpression right = (RealExpression) copyRealConstraint(header.getRight());
 		RealConstraint newHeader = new RealConstraint(left, comp, right);
 		
-		newHeader.and = craRealHeader((RealConstraint) header.and);
+		newHeader.and = copyRealHeader((RealConstraint) header.and);
 		return newHeader;
 	}
-	
-	public Expression craRealConstraint(Expression e) {
+
+	public Expression copyRealConstraint(Expression e) {
 		if (e == null) {
 			return null;
 		}
 		
+		if (e instanceof SymbolicReal) {
+			return new SymbolicReal(((SymbolicReal) e).getName());
+		}
+		
 		if (e instanceof RealConstant) {
-			// RealConstant: Keep
 			return new RealConstant(((RealConstant) e).value);
 		}
 		
-		if (e instanceof SymbolicReal) {
-			// SymbolicReal: Check if needs to be replaced by RealConstant
-			String sym = ((SymbolicReal) e).getName();
-			
-			if (REPLACELIST.contains(sym)) {
-				//DEBUG
-				//System.out.println("replace");
-    			// Replace, return a RealConstant
-				double value = (double) Observations.values.get(sym);
-				RealConstant replaceConstant = new RealConstant(value);
-				return replaceConstant;
-    		} else {
-    			// Don't replace, return SymbolicReal
-    			return new SymbolicReal(sym);
-    		}
-		}
-		
 		if (e instanceof BinaryRealExpression) {
-			// BinaryRealExpression: recursively copy and replace left and right, and absorb if necessary
+			
+			/*
 			Operator op = ((BinaryRealExpression) e).getOp();
-			RealExpression left = (RealExpression) craRealConstraint(((BinaryRealExpression) e).getLeft());
-			RealExpression right = (RealExpression) craRealConstraint(((BinaryRealExpression) e).getRight());
-			//DEBUG
-			//System.out.println(left+" "+op+" "+right);
-			if (left instanceof RealConstant && right instanceof RealConstant) {
-				//DEBUG
-				//System.out.println("absorb");
-				// Left and right are both RealConstant, absorb needed
-				double leftValue = ((RealConstant) left).value;
-				double rightValue = ((RealConstant) right).value;
-				switch(op){
-			      case PLUS:
-			    	  return new RealConstant(leftValue + rightValue);
-			      case MINUS:
-			    	  return new RealConstant(leftValue - rightValue);
-			      case MUL:
-			    	  return new RealConstant(leftValue * rightValue);
-			      case DIV:
-			    	  return new RealConstant(leftValue / rightValue);
-			      case REM:
-			    	  return new RealConstant(leftValue % rightValue);
-			      default:
-			          throw new RuntimeException("## Error: op not supported. left: " + leftValue + ", right: " + rightValue + ", op: " + op);
-				}
-			} else {
-				// Absorb not needed
-				return new BinaryRealExpression(left, op, right); 
-			}
+			RealExpression left = (RealExpression) copyRealConstraint(((BinaryRealExpression) e).getLeft());
+			//System.out.println(left);
+			RealExpression right = (RealExpression) copyRealConstraint(((BinaryRealExpression) e).getRight());
+			//System.out.println(right);
+			return new BinaryRealExpression(left, op, right);
+			*/
+			return new BinaryRealExpression((RealExpression) copyRealConstraint(((BinaryRealExpression) e).getLeft()),
+					((BinaryRealExpression) e).getOp(),
+					(RealExpression) copyRealConstraint(((BinaryRealExpression) e).getRight())
+					);
 		}
 		
-		// Other types: not supported, throw exception
-		throw new RuntimeException("## Error: not supported. e: " + e.getClass());
+			
+		throw new RuntimeException("## Error! e: " + e.getClass());
 	}
 	
-	// Print PC
+	
+	// Print the PC
 	public void printRealHeader(RealConstraint header) {
 		if (header == null) {
 			return;
@@ -412,4 +467,75 @@ public class RealConstraintReplacer {
 	
 	public List<String> PCLIST;
 	
+	// Shrink the PC by apply constraint calculations
+	public void absorbRealHeader(RealConstraint header) {
+		if (header == null) {
+			return;
+		}
+		
+		header.setLeft((RealExpression) absorbRealExpression(header.getLeft()));
+		header.setRight((RealExpression) absorbRealExpression(header.getRight()));
+		
+		absorbRealHeader((RealConstraint) header.and);
+	}
+		
+	public Expression absorbRealExpression(RealExpression e) {
+		if (e instanceof SymbolicReal || e instanceof RealConstant) {
+			return e;
+		}
+		
+		if (e instanceof BinaryRealExpression) {
+			BinaryRealExpression be = (BinaryRealExpression) e;
+			
+			if (be.getLeft() instanceof BinaryRealExpression) {
+				BinaryRealExpression beL = (BinaryRealExpression) be.getLeft();
+				if (!(beL.getLeft() instanceof SymbolicReal) && !(beL.getRight() instanceof SymbolicReal)) {
+					be.setLeft(absorbRealExpression(be.getLeft()));
+				}	
+			}
+			
+			if (be.getRight() instanceof BinaryRealExpression) {
+				BinaryRealExpression beR = (BinaryRealExpression) be.getRight();
+				if (!(beR.getLeft() instanceof SymbolicReal) && !(beR.getRight() instanceof SymbolicReal)) {
+					be.setRight(absorbRealExpression(be.getRight()));
+				}	
+			}
+			
+			
+			if (be.getLeft() instanceof SymbolicReal && be.getRight() instanceof SymbolicReal) {
+				return e;
+			}
+			
+			if (be.getLeft() instanceof SymbolicReal && be.getRight() instanceof RealConstant) {
+				return e;
+			}
+			
+			if (be.getLeft() instanceof RealConstant && be.getRight() instanceof SymbolicReal) {
+				return e;
+			}
+			
+			if (be.getLeft() instanceof RealConstant && be.getRight() instanceof RealConstant) {
+				Operator opRef = be.getOp();
+				double left = Double.valueOf(be.getLeft().toString().substring(6));
+				double right = Double.valueOf(be.getRight().toString().substring(6));
+				switch(opRef){
+			      case PLUS:
+			    	  return new RealConstant(left + right);
+			      case MINUS:
+			    	  return new RealConstant(left - right);
+			      case MUL:
+			    	  return new RealConstant(left * right);
+			      case DIV:
+			    	  return new RealConstant(left / right);
+			      case REM:
+			    	  return new RealConstant(left % right);
+			      default:
+			          throw new RuntimeException("## Error! left: " + left + ", right: " + right + ", op: " + opRef);
+				}
+			}
+		} else {
+			throw new RuntimeException("## Error! e: " + e.getClass());
+		}
+		return e;		
+	}
 }

@@ -295,7 +295,8 @@ public class SymbolicReplacerListener extends PropertyListenerAdapter implements
                                 pa.solve(pc, solver);
                             } else {
                               //pc.solve();
-                            	RealConstraintReplacer.replaceAndSolvePC(pc);
+                            	RealConstraintReplacer rcr = new RealConstraintReplacer();
+                            	rcr.replaceAndSolvePC(pc);
                             }
 
                             if (!PathCondition.flagSolved) {
