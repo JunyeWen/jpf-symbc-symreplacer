@@ -70,20 +70,6 @@ public class RealConstraintReplacer {
 	public void replaceAndSolvePC(PathCondition pc) {
         System.out.println("###########################");
         System.out.println("WARNING: WORKING IN PROGRESS!");      
-        /*
-        System.out.println("Before replacing:");
-        //System.out.println("Expression types (Before): ");
-        //check(pc.header);
-        startTime = System.currentTimeMillis();
-        solvable = pc.solve();
-        endTime = System.currentTimeMillis();
-    	System.out.println("Can be solved (Before): " + solvable);
-    	System.out.println("Time (Before): " + (endTime - startTime));
-    	/*
-    	if (solvable) {
-    		System.out.println("PC (Before): " + pc);
-    	}
-        */
         
         Constraint header = pc.header;
         
@@ -97,54 +83,79 @@ public class RealConstraintReplacer {
         	/////////TEST!!!!!/////////
         	int i;
         	boolean breakFlag = false;
+        	
+        	System.out.print("Begin ranking...");
+        	RANKMAP  = new HashMap<String, Double>();
+            startTime = System.currentTimeMillis();
+        	rankRealHeader(pc.header);
+    		endTime   = System.currentTimeMillis();
+    		System.out.println("Finished. Time: " + (endTime - startTime)/1000L + " seconds.");
+    		System.out.println("Size: " + RANKMAP.size());
+    		
         	for (i = RANK_INIT; i >= RANK_MIN; i=i-STEP) {
         		//PathCondition pc2 = pc.make_copy();
         		PathCondition pc2 = new PathCondition();
-                PathCondition.flagSolved = false;
+                //PathCondition.flagSolved = false;
                 
-
-        		System.out.print("Begin ranking...");
-        		RANKMAP  = new HashMap<String, Double>();
+        		System.out.println("Choosing " + i + " least important symbolic variables");
+        		System.out.print("Begin sorting...");
                 startTime = System.currentTimeMillis();
-            	rankRealHeader(pc.header);
         		sortRanking(i);
         		endTime   = System.currentTimeMillis();
-        		System.out.println("Finished. Time: " + (endTime - startTime));
-                        
+        		System.out.println("Finished. Time: " + (endTime - startTime)/1000L + " seconds.");
+                System.out.println("Size: "+REPLACELIST.size());
+        		
                 System.out.print("Begin copying...");
                 startTime = System.currentTimeMillis();
         		pc2.header = this.craRealHeader((RealConstraint) header);
         		endTime   = System.currentTimeMillis();
-        		System.out.println("Finished. Time: " + (endTime - startTime));
+        		System.out.println("Finished. Time: " + (endTime - startTime)/1000L + " seconds.");
         		
             	Thread t1 = new Thread("PC Solving Thread") {
             		public void run() {
+            			System.out.print("Begin solving...");
             			startTime = System.currentTimeMillis();
                         solvable = pc2.solve();
-                        endTime   = System.currentTimeMillis();
+                        endTime = System.currentTimeMillis();
+                        System.out.println("Finished. Time: " + (endTime - startTime)/1000L + " seconds.");
             		}
             	};
         		
             	solvable = false;
             	
+            	int timeMS = 30;
             	t1.start();
                 try {
-                    t1.join(30000);
+                    t1.join(timeMS*1000);
                 } catch (InterruptedException e) {
-                    System.out.println("t1 interrupted when waiting join");
+                    System.out.println("PC Solving Thread interrupted when waiting join.");
                     e.printStackTrace();
                 }
-                t1.interrupt();
+                
+                if (t1.isAlive()) {
+                	System.out.println("PC Solving took longer than " + timeMS + " seconds.");
+                	System.out.println("Thread will be terminated.");
+                	t1.interrupt();
+                	solvable = false;
+                } else {
+                	System.out.println("PC Solving finished within " + timeMS + " seconds");
+                }
             	
-            	System.out.println("Can be solved (After): " + solvable);
+            	System.out.println("PC can be solved: " + solvable);
+            	/*
+            	System.out.print("Begin printing...");
+            	startTime = System.currentTimeMillis();
             	if (solvable) {
+            		System.out.println("Result:");
             		PCLIST  = new ArrayList<String>();
             		printRealHeader((RealConstraint) pc2.header);
             		for (String s : PCLIST) {
             			System.out.println(s);
             		}
         		}
-            	System.out.println("Time (After): " + (endTime - startTime));
+        		endTime = System.currentTimeMillis();
+                System.out.println("Finished. Time: " + (endTime - startTime)/1000L + " seconds.");
+        		*/
             	
             	if (solvable || breakFlag) {	
             		break;
@@ -375,7 +386,7 @@ public class RealConstraintReplacer {
 	}
 	
 	// Print PC
-	public void printRealHeader(RealConstraint header) {
+	public static void printRealHeader(RealConstraint header) {
 		if (header == null) {
 			return;
 		}
@@ -386,14 +397,14 @@ public class RealConstraintReplacer {
 		printRealHeader((RealConstraint) header.and);
 	}
 
-	public void printRealConstraint(Expression e) {
+	public static void printRealConstraint(Expression e) {
 		if (e == null) {
 			return;
 		}
 			
 		if (e instanceof SymbolicReal) {
-			//System.out.println(e);
-			if (!PCLIST.contains(e.toString())) {
+			System.out.println(e);
+			if (PCLIST.isEmpty()||!PCLIST.contains(e.toString())) {
 				PCLIST.add(e.toString());
 			}
 			return;
@@ -405,11 +416,8 @@ public class RealConstraintReplacer {
 			printRealConstraint(((BinaryRealExpression) e).getRight());
 			return;
 		}
-			
-				
-		//throw new RuntimeException("## Error! e: " + e.getClass());
 	}
 	
-	public List<String> PCLIST;
+	public static List<String> PCLIST = new ArrayList<String>();
 	
 }
