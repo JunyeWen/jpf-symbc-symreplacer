@@ -108,6 +108,8 @@ public class SymbolicConstraintsGeneral {
             pb = new ProblemZ3BitVector();
         } else if (dp[0].equalsIgnoreCase("z3optimize")) {
             pb = new ProblemZ3Optimize();
+        } else if (dp[0].equalsIgnoreCase("z3replace")) {
+            pb = new ProblemZ3Replace(Observations.getConcreteValMapping());
         }
         // added option to have no-solving
         // as a result symbolic execution will explore an over-approximation of the
