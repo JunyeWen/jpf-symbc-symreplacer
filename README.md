@@ -1,15 +1,15 @@
 # GSoC-2019 Project
 Author:
-Junye Wen (junye.wen@txstate.edu)
+  Junye Wen (junye.wen@txstate.edu)
 
 Mentor:
-Guowei Yang (gyang@txstate.edu)
-Corina Pasareanu (corina.pasareanu@west.cmu.edu)
-Yannic Noller (yannic.noller@informatik.hu-berlin.de)
+  Guowei Yang (gyang@txstate.edu)
+  Corina Pasareanu (corina.pasareanu@west.cmu.edu)
+  Yannic Noller (yannic.noller@informatik.hu-berlin.de)
 
 Project description:
-This project implements a new listener in jpf-symbc.
-This new listener allows user to replace symbolic variables in a generated path condition to its input concrete value based on how important the PC is, so that only the most important symbolic variables will be kept and PC solving speeds up.
+  This project implements a new listener in jpf-symbc.
+  This new listener allows user to replace symbolic variables in a generated path condition to its input concrete value based on how important the PC is, so that only the most important symbolic variables will be kept and PC solving speeds up.
 
 How to use:
 1. This repository is a fork of jpf-symbc, so that you must edit your local Java pathfinder configuration file (site.properties) and set the path of jpf-symbc to the repository.
@@ -32,24 +32,20 @@ Explanation on the example above:
   3. At least 0 symbolic variables will be replaced in the last iteration.
 
 Code instruction:
-Package edu.txstate.cs.wen.tools:
+1. Package edu.txstate.cs.wen.tools:
   Includes the replacing methors and other tool methods.
   RealConstraintReplacer.java is the class that we are using in this version, and some other alternative solution and implementation can also be found in other classes in this package.
-  
-Class SymbolicReplacerListener.java:
+2. Class SymbolicReplacerListener.java:
   The listener to be called in .jpf file.
-
-Class SymbolicListenerLogging.java:
+3. Class SymbolicListenerLogging.java:
   This is the SymbolicListener.java with a logging to time PC solving.
-
-Package gov.nasa.jpf.symbc.numeric:
+4. Package gov.nasa.jpf.symbc.numeric:
   Multiple classes in this package is edited for implementation purpose.
-
-src/examples.mnist2
+5. src/examples.mnist2
   A small example subject
 
 Usage consideration:
-Only support real symbolic variables, real constants and binary real expressions. Some sample code to support interger types can be found in edu.txstate.cs.wen.tools package.
+  Only support real symbolic variables, real constants and binary real expressions. Some sample code to support interger types can be found in edu.txstate.cs.wen.tools package.
 
 # jpf-symbc
 Symbolic PathFinder:
