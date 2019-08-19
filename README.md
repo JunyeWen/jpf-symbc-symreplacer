@@ -9,7 +9,7 @@ Mentor:
 
 Project description:
   This project implements a new listener in jpf-symbc.
-  This new listener allows user to replace symbolic variables in a generated path condition to its input concrete value based on how important the PC is, so that only the most important symbolic variables will be kept and PC solving speeds up.
+  This new listener allows user to replace symbolic variables in a path condition with their input concrete values, so that only the most important symbolic variables will be kept and thus PC solving speeds up.
 
 How to use:
 1. This repository is a fork of jpf-symbc, so that you must edit your local Java pathfinder configuration file (site.properties) and set the path of jpf-symbc to the repository.
