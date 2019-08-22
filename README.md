@@ -14,10 +14,10 @@ Project description:
   Project is proposed to Java Pathfinder Team. Java Pathfinder (JPF) is a highly extensible Java virtual machine which is written in Java, and is used to create a variety of verification tools ranging from model checkers to test case generators.
 
 Dependencies:
-Java version:
-  Java 8
-Java Pathfinder:
-  https://github.com/javapathfinder/jpf-core
+  Java version:
+    Java 8
+  Java Pathfinder:
+    https://github.com/javapathfinder/jpf-core
 
 How to use:
 1. This repository is a fork of jpf-symbc, so that you must edit your local Java pathfinder configuration file (site.properties) and set the path of jpf-symbc to the repository.
