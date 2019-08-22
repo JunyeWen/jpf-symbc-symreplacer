@@ -10,6 +10,14 @@ Mentor:
 Project description:
   This project implements a new listener in jpf-symbc.
   This new listener allows user to replace symbolic variables in a path condition with their input concrete values, so that only the most important symbolic variables will be kept and thus PC solving speeds up.
+  Project is part of Google Summer of Code 2019 Program (GSoC-2019). GSoC is a global program focused on bringing more student developers into open source software development.
+  Project is proposed to Java Pathfinder Team. Java Pathfinder (JPF) is a highly extensible Java virtual machine which is written in Java, and is used to create a variety of verification tools ranging from model checkers to test case generators.
+
+Dependencies:
+Java version:
+Java 8
+Java Pathfinder:
+https://github.com/javapathfinder/jpf-core
 
 How to use:
 1. This repository is a fork of jpf-symbc, so that you must edit your local Java pathfinder configuration file (site.properties) and set the path of jpf-symbc to the repository.
@@ -46,6 +54,12 @@ Code instruction:
 
 Usage consideration:
   Only support real symbolic variables, real constants and binary real expressions. Some sample code to support interger types can be found in edu.txstate.cs.wen.tools package.
+
+Related  Links:
+# jpf-core
+Java Pathfinder:
+An extensible software model checking framework for Java bytecode programs
+https://github.com/javapathfinder/jpf-core
 
 # jpf-symbc
 Symbolic PathFinder:
