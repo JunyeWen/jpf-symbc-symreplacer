@@ -15,9 +15,9 @@ Project description:
 
 Dependencies:
 Java version:
-Java 8
+  Java 8
 Java Pathfinder:
-https://github.com/javapathfinder/jpf-core
+  https://github.com/javapathfinder/jpf-core
 
 How to use:
 1. This repository is a fork of jpf-symbc, so that you must edit your local Java pathfinder configuration file (site.properties) and set the path of jpf-symbc to the repository.
@@ -54,6 +54,9 @@ Code instruction:
 
 Usage consideration:
   Only support real symbolic variables, real constants and binary real expressions. Some sample code to support interger types can be found in edu.txstate.cs.wen.tools package.
+
+List of changes:
+https://github.com/JunyeWen/jpf-symbc-symreplacer/compare/98a0e08..b5ce1b1
 
 Related  Links:
 # jpf-core
