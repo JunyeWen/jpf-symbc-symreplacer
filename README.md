@@ -3,8 +3,8 @@ Author:
   Junye Wen (junye.wen@txstate.edu)
 
 Mentor:
-  Guowei Yang (gyang@txstate.edu)
   Corina Pasareanu (corina.pasareanu@west.cmu.edu)
+  Guowei Yang (gyang@txstate.edu)
   Yannic Noller (yannic.noller@informatik.hu-berlin.de)
 
 Project description:
