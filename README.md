@@ -4,8 +4,8 @@ Author:
 
 Mentor:
   Corina Pasareanu (corina.pasareanu@west.cmu.edu)
-  Guowei Yang (gyang@txstate.edu)
   Yannic Noller (yannic.noller@informatik.hu-berlin.de)
+  Guowei Yang (gyang@txstate.edu)
 
 Project description:
   This project implements a new listener in jpf-symbc.
